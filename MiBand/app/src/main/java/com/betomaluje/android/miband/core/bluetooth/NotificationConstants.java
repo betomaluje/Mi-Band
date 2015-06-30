@@ -13,7 +13,11 @@ public class NotificationConstants {
     public static final String MI_BAND_CONNECT = "com.betomaluje.android.miband.connect";
     public static final String MI_BAND_DISCONNECT = "com.betomaluje.android.miband.disconnect";
     public static final String MI_BAND_LIGHTS = "com.betomaluje.android.miband.lights";
-    public static final String MI_BAND_VIBRATE = "com.betomaluje.android.miband.vibrate";
+    public static final String MI_BAND_VIBRATE_WITH_LED = "com.betomaluje.android.miband.vibrate_with_led";
+    public static final String MI_BAND_VIBRATE_UNTIL_CALL_STOP = "com.betomaluje.android.miband.vibrate_until_call_stop";
+    public static final String MI_BAND_VIBRATE_WITHOUT_LED = "com.betomaluje.android.miband.vibrate_without";
     public static final String MI_BAND_BATTERY = "com.betomaluje.android.miband.battery";
+
+    public static final String MI_BAND_NEW_NOTIFICATION = "com.betomaluje.android.miband.new_notification";
 
 }

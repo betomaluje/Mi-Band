@@ -4,10 +4,11 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.betomaluje.android.miband.core.bluetooth.BluetoothIO;
-import com.betomaluje.android.miband.core.bluetooth.MiBandService;
 import com.betomaluje.android.miband.core.bluetooth.MiBandWrapper;
 import com.betomaluje.android.miband.core.bluetooth.NotificationConstants;
 import com.betomaluje.android.miband.core.colorpicker.ColorPickerDialog;
@@ -51,10 +52,12 @@ public class MiBand {
     }
 
     public static void init(Context context) {
-        miBandService = new Intent(context, MiBandService.class);
-        miBandService.setAction(NotificationConstants.MI_BAND_CONNECT);
+        if(miBandService == null) {
+            miBandService = new Intent(context, MiBandService.class);
+            miBandService.setAction(NotificationConstants.MI_BAND_CONNECT);
 
-        context.startService(miBandService);
+            context.startService(miBandService);
+        }
     }
 
     public static void sendAction(final int action) {

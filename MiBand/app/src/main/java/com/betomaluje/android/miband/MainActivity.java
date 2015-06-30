@@ -1,12 +1,15 @@
 package com.betomaluje.android.miband;
 
+import android.app.ActivityManager;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AlertDialog;
@@ -18,7 +21,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.betomaluje.android.miband.core.MiBand;
-import com.betomaluje.android.miband.core.bluetooth.MiBandService;
+import com.betomaluje.android.miband.core.MiBandService;
 import com.betomaluje.android.miband.core.bluetooth.MiBandWrapper;
 import com.betomaluje.android.miband.core.bluetooth.NotificationConstants;
 import com.betomaluje.android.miband.core.colorpicker.ColorPickerDialog;
@@ -32,7 +35,7 @@ public class MainActivity extends ActionBarActivity {
 
     private int BT_REQUEST_CODE = 1001;
 
-    private Button btn_connect, btn_lights, btn_lights_2, btn_vibrate, btn_baterry;
+    private Button btn_connect, btn_lights, btn_lights_2, btn_vibrate, btn_battery;
     private TextView textView_status;
 
     private boolean isConnected = false;
@@ -69,7 +72,6 @@ public class MainActivity extends ActionBarActivity {
                 BatteryInfo batteryInfo = b.getParcelable("battery");
                 textView_status.setText(batteryInfo.toString());
             }
-
         }
     };
 
@@ -78,11 +80,19 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //Ask for permission to intercept notifications on first run.
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        if (sharedPrefs.getBoolean("firstrun", true)) {
+            sharedPrefs.edit().putBoolean("firstrun", false).apply();
+            Intent enableIntent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+            startActivity(enableIntent);
+        }
+
         btn_connect = (Button) findViewById(R.id.btn_connect);
         btn_lights = (Button) findViewById(R.id.btn_lights);
         btn_lights_2 = (Button) findViewById(R.id.btn_lights_2);
         btn_vibrate = (Button) findViewById(R.id.btn_vibrate);
-        btn_baterry = (Button) findViewById(R.id.btn_baterry);
+        btn_battery = (Button) findViewById(R.id.btn_battery);
 
         textView_status = (TextView) findViewById(R.id.textView_status);
 
@@ -90,13 +100,13 @@ public class MainActivity extends ActionBarActivity {
         btn_lights.setOnClickListener(btnListener);
         btn_lights_2.setOnClickListener(btnListener);
         btn_vibrate.setOnClickListener(btnListener);
-        btn_baterry.setOnClickListener(btnListener);
+        btn_battery.setOnClickListener(btnListener);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(bluetoothStatusReceiver);
+        LocalBroadcastManager.getInstance(MainActivity.this).unregisterReceiver(bluetoothStatusReceiver);
     }
 
     @Override
@@ -104,6 +114,21 @@ public class MainActivity extends ActionBarActivity {
         super.onResume();
         //we are listening from the mi band service
         LocalBroadcastManager.getInstance(MainActivity.this).registerReceiver(bluetoothStatusReceiver, new IntentFilter(NotificationConstants.ACTION_MIBAND_SERVICE));
+
+        isConnected = false;
+        ActivityManager manager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (MiBandService.class.getName().equals(service.service.getClassName())) {
+                isConnected = true;
+                break;
+            }
+        }
+
+        if (isConnected) {
+            startMiBand();
+        } else {
+            stopMiBand();
+        }
     }
 
     private View.OnClickListener btnListener = new View.OnClickListener() {
@@ -138,15 +163,14 @@ public class MainActivity extends ActionBarActivity {
                     break;
                 case R.id.btn_vibrate:
                     textView_status.setText("Vibrating");
-                    MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE);
+                    MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE_WITH_LED);
                     break;
-                case R.id.btn_baterry:
+                case R.id.btn_battery:
                     MiBand.sendAction(MiBandWrapper.ACTION_BATTERY);
                     break;
             }
         }
     };
-
 
     private void connectToMiBand() {
         MiBand.init(MainActivity.this);
@@ -197,7 +221,7 @@ public class MainActivity extends ActionBarActivity {
         btn_lights.setEnabled(true);
         btn_lights_2.setEnabled(true);
         btn_vibrate.setEnabled(true);
-        btn_baterry.setEnabled(true);
+        btn_battery.setEnabled(true);
     }
 
     private void stopMiBand() {
@@ -210,7 +234,7 @@ public class MainActivity extends ActionBarActivity {
         btn_lights.setEnabled(false);
         btn_lights_2.setEnabled(false);
         btn_vibrate.setEnabled(false);
-        btn_baterry.setEnabled(false);
+        btn_battery.setEnabled(false);
 
         isConnected = false;
     }

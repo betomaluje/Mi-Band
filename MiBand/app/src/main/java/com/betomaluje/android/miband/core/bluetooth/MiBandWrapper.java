@@ -3,7 +3,6 @@ package com.betomaluje.android.miband.core.bluetooth;
 import android.content.Context;
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,15 +12,17 @@ import java.util.Map;
  */
 public class MiBandWrapper {
 
-    private final String TAG = getClass().getSimpleName();
+    //private final String TAG = getClass().getSimpleName();
 
     private Context context;
 
     public static final int ACTION_CONNECT = 0;
     public static final int ACTION_DISCONNECT = 1;
     public static final int ACTION_LIGHTS = 2;
-    public static final int ACTION_VIBRATE = 3;
-    public static final int ACTION_BATTERY = 4;
+    public static final int ACTION_VIBRATE_WITH_LED = 3;
+    public static final int ACTION_VIBRATE_UNTIL_CALL_STOP = 4;
+    public static final int ACTION_VIBRATE_WITHOUT_LED = 5;
+    public static final int ACTION_BATTERY = 6;
 
     private static MiBandWrapper instance;
 
@@ -37,57 +38,14 @@ public class MiBandWrapper {
     }
 
     public void sendAction(final int action) {
-
-        String sentAction = "";
-
-        switch (action) {
-            case ACTION_CONNECT:
-                sentAction = NotificationConstants.MI_BAND_CONNECT;
-                break;
-            case ACTION_DISCONNECT:
-                sentAction = NotificationConstants.MI_BAND_DISCONNECT;
-                break;
-            case ACTION_LIGHTS:
-                sentAction = NotificationConstants.MI_BAND_LIGHTS;
-                break;
-            case ACTION_VIBRATE:
-                sentAction = NotificationConstants.MI_BAND_VIBRATE;
-                break;
-            case ACTION_BATTERY:
-                sentAction = NotificationConstants.MI_BAND_BATTERY;
-                break;
-        }
-
-        //Log.i(TAG, "sending action: " + sentAction + " to MiBandService");
-
         final Intent intent = new Intent(NotificationConstants.ACTION_MIBAND);
-        intent.putExtra("type", sentAction);
+        intent.putExtra("type", getIntentAction(action));
         LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
     }
 
     public void sendAction(final int action, HashMap<String, ? extends Object> params) {
-        String sentAction = "";
-
-        switch (action) {
-            case ACTION_CONNECT:
-                sentAction = NotificationConstants.MI_BAND_CONNECT;
-                break;
-            case ACTION_DISCONNECT:
-                sentAction = NotificationConstants.MI_BAND_DISCONNECT;
-                break;
-            case ACTION_LIGHTS:
-                sentAction = NotificationConstants.MI_BAND_LIGHTS;
-                break;
-            case ACTION_VIBRATE:
-                sentAction = NotificationConstants.MI_BAND_VIBRATE;
-                break;
-            case ACTION_BATTERY:
-                sentAction = NotificationConstants.MI_BAND_BATTERY;
-                break;
-        }
-
         final Intent intent = new Intent(NotificationConstants.ACTION_MIBAND);
-        intent.putExtra("type", sentAction);
+        intent.putExtra("type", getIntentAction(action));
 
         for (Map.Entry<String, ? extends Object> entry : params.entrySet()) {
             Object o = entry.getValue();
@@ -101,9 +59,39 @@ public class MiBandWrapper {
             }
         }
 
+        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
+    }
+
+    private String getIntentAction(final int action) {
+        String sentAction = "";
+
+        switch (action) {
+            case ACTION_CONNECT:
+                sentAction = NotificationConstants.MI_BAND_CONNECT;
+                break;
+            case ACTION_DISCONNECT:
+                sentAction = NotificationConstants.MI_BAND_DISCONNECT;
+                break;
+            case ACTION_LIGHTS:
+                sentAction = NotificationConstants.MI_BAND_LIGHTS;
+                break;
+            case ACTION_VIBRATE_WITH_LED:
+                sentAction = NotificationConstants.MI_BAND_VIBRATE_WITH_LED;
+                break;
+            case ACTION_VIBRATE_UNTIL_CALL_STOP:
+                sentAction = NotificationConstants.MI_BAND_VIBRATE_UNTIL_CALL_STOP;
+                break;
+            case ACTION_VIBRATE_WITHOUT_LED:
+                sentAction = NotificationConstants.MI_BAND_VIBRATE_WITHOUT_LED;
+                break;
+            case ACTION_BATTERY:
+                sentAction = NotificationConstants.MI_BAND_BATTERY;
+                break;
+        }
+
         //Log.i(TAG, "sending action: " + sentAction + " to MiBandService");
 
-        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
+        return sentAction;
     }
 
 }

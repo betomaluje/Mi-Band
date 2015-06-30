@@ -1,4 +1,4 @@
-package com.betomaluje.android.miband.core.bluetooth;
+package com.betomaluje.android.miband.core;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -11,8 +11,7 @@ import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import com.betomaluje.android.miband.core.ActionCallback;
-import com.betomaluje.android.miband.core.MiBand;
+import com.betomaluje.android.miband.core.bluetooth.NotificationConstants;
 import com.betomaluje.android.miband.core.model.BatteryInfo;
 import com.betomaluje.android.miband.core.model.VibrationMode;
 
@@ -50,9 +49,19 @@ public class MiBandService extends Service {
                         miBand.setLedColor(color);
                     }
                     break;
-                case NotificationConstants.MI_BAND_VIBRATE:
+                case NotificationConstants.MI_BAND_VIBRATE_WITH_LED:
 
                     miBand.startVibration(VibrationMode.VIBRATION_WITH_LED);
+
+                    break;
+                case NotificationConstants.MI_BAND_VIBRATE_UNTIL_CALL_STOP:
+
+                    miBand.startVibration(VibrationMode.VIBRATION_UNTIL_CALL_STOP);
+
+                    break;
+                case NotificationConstants.MI_BAND_VIBRATE_WITHOUT_LED:
+
+                    miBand.startVibration(VibrationMode.VIBRATION_WITHOUT_LED);
 
                     break;
                 case NotificationConstants.MI_BAND_BATTERY:
@@ -112,6 +121,8 @@ public class MiBandService extends Service {
 
         unregisterReceiver(bluetoothStatusChangeReceiver);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(miBandReceiver);
+
+        broadcastUpdate(NotificationConstants.MI_BAND_DISCONNECT);
     }
 
     @Override
@@ -134,12 +145,13 @@ public class MiBandService extends Service {
             return START_NOT_STICKY;
         }
 
+        connectMiBand();
+
         switch (action) {
-            case NotificationConstants.MI_BAND_CONNECT:
-                if (!mStarted) {
-                    mStarted = true;
-                    connectMiBand();
-                }
+            case NotificationConstants.MI_BAND_NEW_NOTIFICATION:
+                //new notification! notify Mi Band!
+                //MiBand.sendAction(MiBandWrapper.ACTION_LIGHTS, params);
+
                 break;
         }
 
@@ -147,9 +159,12 @@ public class MiBandService extends Service {
     }
 
     private void connectMiBand() {
-        miBand = MiBand.getInstance(MiBandService.this);
-        if (!miBand.isConnected())
-            miBand.connect(connectionAction);
+        if (!mStarted) {
+            mStarted = true;
+            miBand = MiBand.getInstance(MiBandService.this);
+            if (!miBand.isConnected())
+                miBand.connect(connectionAction);
+        }
     }
 
     private ActionCallback connectionAction = new ActionCallback() {
