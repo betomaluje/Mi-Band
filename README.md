@@ -65,15 +65,18 @@ As simple as that!
 ## Actions
 
 Now the fun part. To send commands you use `MiBand.sendAction(int action, HashMap<String, ? extends Object> params)` or `MiBand.sendAction(int action)` where "action" could be
+
 * MiBandWrapper.ACTION_CONNECT
 2. MiBandWrapper.ACTION_DISCONNECT
 3. MiBandWrapper.ACTION_LIGHTS
-4. MiBandWrapper.ACTION_VIBRATE
-5. MiBandWrapper.ACTION_BATTERY
+4. MiBandWrapper.ACTION_VIBRATE_WITH_LED
+5. MiBandWrapper.ACTION_VIBRATE_WITHOUT_LED
+6. MiBandWrapper.ACTION_VIBRATE_UNTIL_CALL_STOP
+7. MiBandWrapper.ACTION_BATTERY
 
 for example to make the Mi Band vibrate
     
-    MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE);
+    MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE_WITH_LED);
 
 Also there's a `ColorPickerDialog` class to help choose the int value of a color
 
