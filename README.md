@@ -39,26 +39,26 @@ It's based on [pangliang's implementation](https://github.com/pangliang/miband-s
 
 2. In `onPause` and `onResume` you should register this `BroadcastReceiver`
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        LocalBroadcastManager.getInstance(MainActivity.this).unregisterReceiver(bluetoothStatusReceiver);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        //we are listening from the mi band service
-        LocalBroadcastManager.getInstance(MainActivity.this).registerReceiver(bluetoothStatusReceiver, new IntentFilter(NotificationConstants.ACTION_MIBAND_SERVICE));
-    }
+        @Override
+        protected void onPause() {
+            super.onPause();
+            LocalBroadcastManager.getInstance(MainActivity.this).unregisterReceiver(bluetoothStatusReceiver);
+        }
+    
+        @Override
+        protected void onResume() {
+            super.onResume();
+            //we are listening from the mi band service
+            LocalBroadcastManager.getInstance(MainActivity.this).registerReceiver(bluetoothStatusReceiver, new IntentFilter(NotificationConstants.ACTION_MIBAND_SERVICE));
+        }
 
 3. Then you're ready to connect to Mi Band
 
-    MiBand.init(MainActivity.this);
+        MiBand.init(MainActivity.this);
 
 And to disconnect
 
-    MiBand.disconnect();
+        MiBand.disconnect();
 
 As simple as that! 
 
