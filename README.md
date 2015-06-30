@@ -1,2 +1,2 @@
-# Mi-Band
-Mi Band integration
+# Mi Band
+Mi Band Android integration
