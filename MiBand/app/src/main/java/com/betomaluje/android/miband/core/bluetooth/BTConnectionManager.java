@@ -4,6 +4,8 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Handler;
@@ -21,46 +23,74 @@ import java.util.Set;
  */
 public class BTConnectionManager {
 
+    //the scanning timeout period
+    private static final long SCAN_PERIOD = 45000;
+    private static BTConnectionManager instance;
     private final String TAG = getClass().getSimpleName();
-
     private Context context;
     private boolean mScanning = false;
     private boolean mFound = false;
+    private boolean isConnected = false;
+
     private Handler mHandler = new Handler();
     private BluetoothAdapter adapter;
-    private ActionCallback actionCallback;
-    private BluetoothGattCallback classCallback;
+    private ActionCallback connectionCallback;
 
-    //the scanning timeout period
-    private static final long SCAN_PERIOD = 45000;
+    private BTCommandManager io;
+    private BluetoothGatt gatt;
 
-    private static BTConnectionManager instance;
+    private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
+        @Override
+        public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
 
-    public synchronized static BTConnectionManager getInstance(Context context, ActionCallback actionCallback, BluetoothGattCallback classCallback) {
-        if (instance == null) {
-            instance = new BTConnectionManager(context, actionCallback, classCallback);
+            Log.d(TAG,
+                    "onLeScan: name: " + device.getName() + ", uuid: "
+                            + device.getUuids() + ", add: "
+                            + device.getAddress() + ", type: "
+                            + device.getType() + ", bondState: "
+                            + device.getBondState() + ", rssi: " + rssi);
+
+            if (device.getName() != null && device.getAddress() != null && device.getName().equals("MI") && device.getAddress().startsWith("88:0F:10")) {
+                mFound = true;
+
+                stopDiscovery();
+
+                device.connectGatt(context, false, btleGattCallback);
+            }
         }
+    };
 
-        return instance;
-    }
+    private Runnable stopRunnable = new Runnable() {
+        @Override
+        public void run() {
+            stopDiscovery();
+        }
+    };
 
-    public BTConnectionManager(Context context, ActionCallback actionCallback, BluetoothGattCallback classCallback) {
+    public BTConnectionManager(Context context, ActionCallback connectionCallback) {
         this.context = context;
 
         Log.i(TAG, "new BTConnectionManager");
 
-        adapter = BluetoothAdapter.getDefaultAdapter();
+        this.connectionCallback = connectionCallback;
+    }
 
-        this.actionCallback = actionCallback;
-        this.classCallback = classCallback;
+    public synchronized static BTConnectionManager getInstance(Context context, ActionCallback connectionCallback) {
+        if (instance == null) {
+            instance = new BTConnectionManager(context, connectionCallback);
+        }
+
+        return instance;
     }
 
     public void connect() {
         Log.i(TAG, "trying to connect");
         mFound = false;
 
+        adapter = BluetoothAdapter.getDefaultAdapter();
+
         if (adapter == null || !adapter.isEnabled()) {
-            actionCallback.onFail(NotificationConstants.BLUETOOTH_OFF, "Bluetooth disabled or not supported");
+            connectionCallback.onFail(NotificationConstants.BLUETOOTH_OFF, "Bluetooth disabled or not supported");
         } else {
             if (!adapter.isDiscovering()) {
 
@@ -83,6 +113,17 @@ public class BTConnectionManager {
                 }
             }
         }
+    }
+
+    public void disconnect() {
+        if (gatt != null) {
+            gatt.close();
+            gatt = null;
+        }
+
+        isConnected = false;
+
+        connectionCallback.onFail(-1, "disconnected");
     }
 
     private boolean tryPairedDevices() {
@@ -130,7 +171,7 @@ public class BTConnectionManager {
         if (mFound) {
             Log.i(TAG, "already paired!");
             BluetoothDevice mBluetoothMi = adapter.getRemoteDevice(mDeviceAddress);
-            mBluetoothMi.connectGatt(context, false, classCallback);
+            mBluetoothMi.connectGatt(context, false, btleGattCallback);
             //mGatt.connect();
         }
 
@@ -141,12 +182,111 @@ public class BTConnectionManager {
         return mFound;
     }
 
-    private Runnable stopRunnable = new Runnable() {
+    public boolean isConnected() {
+        return isConnected;
+    }
+
+    public BluetoothDevice getDevice() {
+        return gatt.getDevice();
+    }
+
+    public BluetoothGatt getGatt() {
+        return gatt;
+    }
+
+    public void setIo(BTCommandManager io) {
+        this.io = io;
+    }
+
+    private final BluetoothGattCallback btleGattCallback = new BluetoothGattCallback() {
+
         @Override
-        public void run() {
-            stopDiscovery();
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            super.onConnectionStateChange(gatt, status, newState);
+
+            //Log.e(TAG, "onConnectionStateChange (2): " + newState);
+
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                gatt.discoverServices();
+            } else {
+                Log.e(TAG, "onConnectionStateChange disconnect: " + newState);
+                //disconnect();
+                isConnected = false;
+                //connect(context, this.connectionCallback);
+            }
+        }
+
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            super.onServicesDiscovered(gatt, status);
+
+            Log.e(TAG, "onServicesDiscovered (0): " + status + " paired: " + isAlreadyPaired());
+
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+
+                //we set the Gatt instance
+                BTConnectionManager.this.gatt = gatt;
+
+                //we update current band bluetooth MAC address
+                SharedPreferences sharedPrefs = context.getSharedPreferences(UserInfo.KEY_PREFERENCES, Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPrefs.edit();
+                editor.putString(UserInfo.KEY_BT_ADDRESS, gatt.getDevice().getAddress());
+                editor.commit();
+
+                isConnected = true;
+                connectionCallback.onSuccess(isAlreadyPaired());
+            } else {
+                disconnect();
+            }
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicRead(gatt, characteristic, status);
+            if (BluetoothGatt.GATT_SUCCESS == status) {
+                if (io != null)
+                    io.onSuccess(characteristic);
+            } else {
+                io.onFail(status, "onCharacteristicRead fail");
+            }
+        }
+
+        @Override
+        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicWrite(gatt, characteristic, status);
+            if (BluetoothGatt.GATT_SUCCESS == status) {
+                io.onSuccess(characteristic);
+            } else {
+                io.onFail(status, "onCharacteristicWrite fail");
+            }
+        }
+
+        @Override
+        public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
+            super.onReadRemoteRssi(gatt, rssi, status);
+            if (BluetoothGatt.GATT_SUCCESS == status) {
+                io.onSuccess(rssi);
+            } else {
+                io.onFail(status, "onCharacteristicRead fail");
+            }
+        }
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            super.onCharacteristicChanged(gatt, characteristic);
+            if (io.notifyListeners.containsKey(characteristic.getUuid())) {
+                io.notifyListeners.get(characteristic.getUuid()).onNotify(characteristic.getValue());
+            }
         }
     };
+
+    /*
+     *
+     *
+     * DISCOVERY REGION
+     *
+     *
+     */
 
     private void stopDiscovery() {
         Log.i(TAG, "Stopping discovery");
@@ -161,7 +301,7 @@ public class BTConnectionManager {
             mScanning = false;
 
             if (!mFound)
-                actionCallback.onFail(-1, "No bluetooth devices");
+                connectionCallback.onFail(-1, "No bluetooth devices");
         }
     }
 
@@ -198,25 +338,4 @@ public class BTConnectionManager {
         m.obj = runnable;
         return m;
     }
-
-    private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
-        @Override
-        public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
-
-            Log.d(TAG,
-                    "onLeScan: name: " + device.getName() + ", uuid: "
-                            + device.getUuids() + ", add: "
-                            + device.getAddress() + ", type: "
-                            + device.getType() + ", bondState: "
-                            + device.getBondState() + ", rssi: " + rssi);
-
-            if (device.getName() != null && device.getAddress() != null && device.getName().equals("MI") && device.getAddress().startsWith("88:0F:10")) {
-                mFound = true;
-
-                stopDiscovery();
-
-                device.connectGatt(context, false, classCallback);
-            }
-        }
-    };
 }

@@ -6,7 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-import com.betomaluje.android.miband.core.bluetooth.BluetoothIO;
+import com.betomaluje.android.miband.core.bluetooth.BTCommandManager;
+import com.betomaluje.android.miband.core.bluetooth.BTConnectionManager;
 import com.betomaluje.android.miband.core.bluetooth.MiBandWrapper;
 import com.betomaluje.android.miband.core.bluetooth.NotificationConstants;
 import com.betomaluje.android.miband.core.colorpicker.ColorPickerDialog;
@@ -26,10 +27,11 @@ public class MiBand {
 
     private static final String TAG = "miband-android";
     private static Context context;
-    private static BluetoothIO io;
+    private static BTCommandManager io;
     private static MiBand instance;
     private static MiBandWrapper miBandWrapper;
     private static Intent miBandService;
+    private static BTConnectionManager btConnectionManager;
 
     public synchronized static MiBand getInstance(Context context) {
         if (instance == null) {
@@ -41,21 +43,42 @@ public class MiBand {
         return instance;
     }
 
-    public MiBand(Context context) {
+    public MiBand(final Context context) {
         MiBand.context = context;
-        MiBand.io = new BluetoothIO();
         MiBand.miBandWrapper = MiBandWrapper.getInstance(context);
+
+        ActionCallback myConnectionCallback = new ActionCallback() {
+            @Override
+            public void onSuccess(Object data) {
+                Log.d(TAG, "Connection success, now pair: " + data);
+
+                //only once we are paired, we create the BluetoothIO object to communicate with Mi Band
+                io = new BTCommandManager(btConnectionManager.getGatt());
+                btConnectionManager.setIo(io);
+
+                if (!(Boolean) data) {
+                    pair();
+                } else {
+                    setUserInfo(UserInfo.getSavedUser(context));
+                    connectionCallback.onSuccess(null);
+                }
+
+            }
+
+            @Override
+            public void onFail(int errorCode, String msg) {
+                Log.e(TAG, "Fail: " + msg);
+                connectionCallback.onFail(errorCode, msg);
+            }
+        };
+
+        MiBand.btConnectionManager = BTConnectionManager.getInstance(context, myConnectionCallback);
     }
 
     public static void init(Context context) {
-        if (miBandService == null) {
-            miBandService = new Intent(context, MiBandService.class);
-            miBandService.setAction(NotificationConstants.MI_BAND_CONNECT);
-
-            context.startService(miBandService);
-        } else {
-            sendAction(MiBandWrapper.ACTION_CONNECT);
-        }
+        miBandService = new Intent(context, MiBandService.class);
+        miBandService.setAction(NotificationConstants.MI_BAND_CONNECT);
+        context.startService(miBandService);
     }
 
     public static void sendAction(final int action) {
@@ -75,7 +98,7 @@ public class MiBand {
     public void connect(final ActionCallback callback) {
         if (!isConnected()) {
             connectionCallback = callback;
-            MiBand.io.connect(context, myConnectionCallback);
+            btConnectionManager.connect();
         } else {
             Log.e(TAG, "Already connected...");
         }
@@ -84,13 +107,14 @@ public class MiBand {
     public static void disconnect() {
         Log.e(TAG, "Disconnecting Mi Band...");
         MiBand.context.stopService(miBandService);
-        MiBand.io.disconnect();
+        btConnectionManager.disconnect();
     }
 
     private void checkConnection() {
         if (!isConnected() && connectionCallback != null) {
             Log.e(TAG, "Not connected... Waiting for new connection...");
-            MiBand.io.connect(context, myConnectionCallback);
+            //MiBand.io.connect(context, myConnectionCallback);
+            btConnectionManager.connect();
         } else if (connectionCallback == null) {
             throw new NullPointerException("Connection callback is null! Try using connect(ActionCallback) method first");
         }
@@ -102,7 +126,7 @@ public class MiBand {
      * @return
      */
     public boolean isConnected() {
-        return MiBand.io != null && MiBand.io.isConnected();
+        return MiBand.io != null && btConnectionManager != null && btConnectionManager.isConnected();
     }
 
     /**
@@ -138,34 +162,6 @@ public class MiBand {
         };
 
         MiBand.io.writeAndRead(Profile.UUID_CHAR_PAIR, Protocol.PAIR, ioCallback);
-    }
-
-    /**
-     * In charge of connecting and pairing the Mi Band
-     */
-    private ActionCallback myConnectionCallback = new ActionCallback() {
-        @Override
-        public void onSuccess(Object data) {
-            Log.d(TAG, "Connection success, now pair: " + data);
-
-            if (!(Boolean) data) {
-                pair();
-            } else {
-                setUserInfo(UserInfo.getSavedUser(context));
-                connectionCallback.onSuccess(null);
-            }
-
-        }
-
-        @Override
-        public void onFail(int errorCode, String msg) {
-            Log.e(TAG, "Fail: " + msg);
-            connectionCallback.onFail(errorCode, msg);
-        }
-    };
-
-    public BluetoothDevice getDevice() {
-        return MiBand.io.getDevice();
     }
 
     /**
@@ -410,7 +406,7 @@ public class MiBand {
     public void setUserInfo(UserInfo userInfo) {
         checkConnection();
 
-        BluetoothDevice device = MiBand.io.getDevice();
+        BluetoothDevice device = btConnectionManager.getDevice();
 
         if (userInfo == null) {
             userInfo = UserInfo.getDefault(device.getAddress(), context);
@@ -420,7 +416,7 @@ public class MiBand {
     }
 
     public void setUserInfo(int gender, int age, int height, int weight, String alias) {
-        UserInfo user = UserInfo.create(MiBand.io.getDevice().getAddress(), gender, age, height, weight, alias, 0);
+        UserInfo user = UserInfo.create(btConnectionManager.getDevice().getAddress(), gender, age, height, weight, alias, 0);
         MiBand.io.writeCharacteristic(Profile.UUID_CHAR_USER_INFO, user.getData(), null);
     }
 
