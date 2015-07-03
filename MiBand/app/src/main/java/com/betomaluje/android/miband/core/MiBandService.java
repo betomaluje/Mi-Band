@@ -1,7 +1,6 @@
 package com.betomaluje.android.miband.core;
 
 import android.app.Service;
-import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -22,8 +21,6 @@ public class MiBandService extends Service {
     private final static String TAG = MiBandService.class.getSimpleName();
 
     private MiBand miBand;
-
-    private boolean mStarted = false;
 
     private BroadcastReceiver miBandReceiver = new BroadcastReceiver() {
         @Override
@@ -83,11 +80,14 @@ public class MiBandService extends Service {
                         }
                     });
                     break;
+                case NotificationConstants.MI_BAND_REQUEST_CONNECTION:
+                    broadcastUpdate(NotificationConstants.MI_BAND_REQUEST_CONNECTION, miBand.isConnected());
+                    break;
             }
         }
     };
 
-    private final BroadcastReceiver bluetoothStatusChangeReceiver = new BroadcastReceiver() {
+    /*private final BroadcastReceiver bluetoothStatusChangeReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
 
@@ -95,12 +95,14 @@ public class MiBandService extends Service {
                 if (intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1) == BluetoothAdapter.STATE_OFF) {
                     Log.d(TAG, "Bluetooth switched off");
                     MiBand.disconnect();
+                    broadcastUpdate(NotificationConstants.MI_BAND_DISCONNECT);
                 } else if (intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1) == BluetoothAdapter.STATE_ON) {
                     Log.d(TAG, "Bluetooth switched on, initialising");
+                    connectMiBand();
                 }
             }
         }
-    };
+    };*/
 
     @Override
     public void onCreate() {
@@ -108,20 +110,21 @@ public class MiBandService extends Service {
         //we are listening from activities
         LocalBroadcastManager.getInstance(MiBandService.this).registerReceiver(miBandReceiver, new IntentFilter(NotificationConstants.ACTION_MIBAND));
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-        registerReceiver(bluetoothStatusChangeReceiver, filter);
+        //IntentFilter filter = new IntentFilter();
+        //filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        //registerReceiver(bluetoothStatusChangeReceiver, filter);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
 
-        //Log.d(TAG, "Destroying MiBandService");
+        Log.d(TAG, "Destroying MiBandService");
 
-        unregisterReceiver(bluetoothStatusChangeReceiver);
+        //unregisterReceiver(bluetoothStatusChangeReceiver);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(miBandReceiver);
 
+        MiBand.disconnect();
         broadcastUpdate(NotificationConstants.MI_BAND_DISCONNECT);
     }
 
@@ -147,24 +150,14 @@ public class MiBandService extends Service {
 
         connectMiBand();
 
-        switch (action) {
-            case NotificationConstants.MI_BAND_NEW_NOTIFICATION:
-                //new notification! notify Mi Band!
-                //MiBand.sendAction(MiBandWrapper.ACTION_LIGHTS, params);
-
-                break;
-        }
-
         return START_STICKY;
     }
 
     private void connectMiBand() {
-        if (!mStarted) {
-            mStarted = true;
-            miBand = MiBand.getInstance(MiBandService.this);
-            if (!miBand.isConnected())
-                miBand.connect(connectionAction);
-        }
+        miBand = MiBand.getInstance(MiBandService.this);
+        if (!miBand.isConnected())
+            miBand.connect(connectionAction);
+
     }
 
     private ActionCallback connectionAction = new ActionCallback() {
@@ -199,6 +192,13 @@ public class MiBandService extends Service {
         final Intent intent = new Intent(NotificationConstants.ACTION_MIBAND_SERVICE);
         intent.putExtra("type", action);
         intent.putExtra("battery", batteryInfo);
+        LocalBroadcastManager.getInstance(MiBandService.this).sendBroadcast(intent);
+    }
+
+    private void broadcastUpdate(final String action, boolean isConnected) {
+        final Intent intent = new Intent(NotificationConstants.ACTION_MIBAND_SERVICE);
+        intent.putExtra("type", action);
+        intent.putExtra("isConnected", isConnected);
         LocalBroadcastManager.getInstance(MiBandService.this).sendBroadcast(intent);
     }
 }

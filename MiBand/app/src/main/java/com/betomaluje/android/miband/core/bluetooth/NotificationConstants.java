@@ -10,6 +10,7 @@ public class NotificationConstants {
     public static final String ACTION_MIBAND = "com.betomaluje.android.miband.action.miband";
     public static final String ACTION_MIBAND_SERVICE = "com.betomaluje.android.miband.action.miband_service";
 
+    public static final String MI_BAND_REQUEST_CONNECTION = "com.betomaluje.android.miband.request_connection";
     public static final String MI_BAND_CONNECT = "com.betomaluje.android.miband.connect";
     public static final String MI_BAND_DISCONNECT = "com.betomaluje.android.miband.disconnect";
     public static final String MI_BAND_LIGHTS = "com.betomaluje.android.miband.lights";

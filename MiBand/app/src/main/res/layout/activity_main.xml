@@ -32,19 +32,19 @@
         android:enabled="false"/>
 
     <Button
-        android:id="@+id/btn_lights_2"
+        android:id="@+id/btn_notification"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:layout_below="@+id/btn_lights"
         android:layout_centerHorizontal="true"
-        android:text="Cool Lights"
+        android:text="Test Notificaiton"
         android:enabled="false"/>
 
     <Button
         android:id="@+id/btn_vibrate"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/btn_lights_2"
+        android:layout_below="@+id/btn_notification"
         android:layout_centerHorizontal="true"
         android:text="Vibrate"
         android:enabled="false"/>

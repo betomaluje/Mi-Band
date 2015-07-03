@@ -1,9 +1,23 @@
 package com.betomaluje.android.miband.core.model;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.util.Log;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.util.Random;
 
 public class UserInfo {
+
+    public static final String KEY_PREFERENCES = "user_info_preferences";
+    public static final String KEY_BT_ADDRESS = "bt_address";
+    public static final String KEY_GENDER = "gender";
+    public static final String KEY_AGE = "age";
+    public static final String KEY_HEIGHT = "height";
+    public static final String KEY_WEIGHT = "weight";
+    public static final String KEY_ALIAS = "alias";
+    public static final String KEY_TYPE = "type";
 
     private String btAddress;
     private int uid;
@@ -56,13 +70,28 @@ public class UserInfo {
         this.data = sequence;
     }
 
+    public static UserInfo create(String address, int gender, int age, int height, int weight, String alias, int type) throws IllegalArgumentException {
+        if (address == null || address.length() == 0 || alias == null || alias.length() == 0 || gender < 0 || age <= 0 || weight <= 0 || type < 0) {
+            throw new IllegalArgumentException("Invalid parameters");
+        }
+        try {
+            return new UserInfo(address, gender, age, height, weight, alias, type);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Illegal user info data", ex);
+        }
+    }
+
     /**
      * Creates a default user info.
      *
      * @param btAddress the address of the MI Band to connect to.
      */
-    public static UserInfo getDefault(String btAddress){
-        return new UserInfo(btAddress, 0, 26, 180, 80, "1550050550", 0);
+    public static UserInfo getDefault(String btAddress, Context context) {
+        try {
+            return getSavedUser(context);
+        } catch (IllegalArgumentException e) {
+            return new UserInfo(btAddress, 0, 26, 180, 80, "1550050550", 0);
+        }
     }
 
     private String ensureTenCharacters(String alias) {
@@ -224,5 +253,40 @@ public class UserInfo {
 
     public byte[] getData() {
         return this.data;
+    }
+
+    public static UserInfo getSavedUser(Context context) {
+
+        SharedPreferences sharedPrefs = context.getSharedPreferences(KEY_PREFERENCES, Context.MODE_PRIVATE);
+
+        String btAddress = sharedPrefs.getString(KEY_BT_ADDRESS, "");
+        int gender = sharedPrefs.getInt(KEY_GENDER, -1);
+        int age = sharedPrefs.getInt(KEY_AGE, -1);
+        int height = sharedPrefs.getInt(KEY_HEIGHT, -1);
+        int weight = sharedPrefs.getInt(KEY_WEIGHT, -1);
+        String alias = sharedPrefs.getString(KEY_ALIAS, "");
+        int type = sharedPrefs.getInt(KEY_TYPE, -1);
+
+        String TAG = "UserInfo";
+        Log.e(TAG, "address: " + btAddress);
+        Log.e(TAG, "gender: " + gender);
+        Log.e(TAG, "age: " + age);
+        Log.e(TAG, "height: : " + height);
+        Log.e(TAG, "weight: " + weight);
+        Log.e(TAG, "alias: " + alias);
+
+        return create(btAddress, gender, age, height, weight, alias, type);
+    }
+
+    public static String generateAlias() {
+        char[] chars = "0123456789".toCharArray();
+        StringBuilder sb = new StringBuilder();
+        Random random = new Random();
+        for (int i = 0; i < 10; i++) {
+            char c = chars[random.nextInt(chars.length)];
+            sb.append(c);
+        }
+
+        return sb.toString();
     }
 }

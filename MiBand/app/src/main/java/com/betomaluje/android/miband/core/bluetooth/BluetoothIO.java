@@ -7,11 +7,13 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import com.betomaluje.android.miband.core.ActionCallback;
 import com.betomaluje.android.miband.core.NotifyListener;
 import com.betomaluje.android.miband.core.model.Profile;
+import com.betomaluje.android.miband.core.model.UserInfo;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -20,17 +22,24 @@ public class BluetoothIO extends BluetoothGattCallback {
 
     private static final String TAG = BluetoothIO.class.getSimpleName();
     private BluetoothGatt gatt;
+    private Context context;
     private ActionCallback currentCallback;
     private ActionCallback connectionCallback;
+
+    private BTConnectionManager btConnectionManager;
 
     private HashMap<UUID, NotifyListener> notifyListeners = new HashMap<UUID, NotifyListener>();
 
     private boolean isConnected = false;
 
     public void connect(final Context context, final ActionCallback callback) {
+        this.context = context;
+
         if (!isConnected()) {
             this.connectionCallback = callback;
-            new BTConnectionManager(context, callback, BluetoothIO.this);
+
+            btConnectionManager = BTConnectionManager.getInstance(context, callback, BluetoothIO.this);
+            btConnectionManager.connect();
         }
     }
 
@@ -158,7 +167,10 @@ public class BluetoothIO extends BluetoothGattCallback {
             this.gatt = gatt;
             gatt.discoverServices();
         } else {
-            disconnect();
+            Log.e(TAG, "onConnectionStateChange disconnect: " + newState);
+            //disconnect();
+            //isConnected = false;
+            //connect(context, this.connectionCallback);
         }
     }
 
@@ -196,12 +208,19 @@ public class BluetoothIO extends BluetoothGattCallback {
     public void onServicesDiscovered(BluetoothGatt gatt, int status) {
         super.onServicesDiscovered(gatt, status);
 
-        //Log.e(TAG, "onServicesDiscovered (0): " + status);
+        Log.e(TAG, "onServicesDiscovered (0): " + status + " paired: " + btConnectionManager.isAlreadyPaired());
 
         if (status == BluetoothGatt.GATT_SUCCESS) {
 
+            SharedPreferences sharedPrefs = context.getSharedPreferences(UserInfo.KEY_PREFERENCES, Context.MODE_PRIVATE);
+
+            //SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            SharedPreferences.Editor editor = sharedPrefs.edit();
+            editor.putString(UserInfo.KEY_BT_ADDRESS, gatt.getDevice().getAddress());
+            editor.commit();
+
             isConnected = true;
-            connectionCallback.onSuccess(null);
+            connectionCallback.onSuccess(btConnectionManager.isAlreadyPaired());
         } else {
             disconnect();
         }

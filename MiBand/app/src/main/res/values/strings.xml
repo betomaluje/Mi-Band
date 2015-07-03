@@ -1,7 +1,14 @@
 <resources>
     <string name="app_name">Mi Band</string>
+    <string name="wizard_title">Mi Band</string>
 
     <string name="action_settings">Settings</string>
 
-    <string name="notification_service_name">Mi Band</string>
+    <string name="gender_male">male</string>
+    <string name="gender_female">female</string>
+    <string name="age">years</string>
+    <string name="height">[cm]</string>
+    <string name="weight">[Kg]</string>
+
+    <string name="wizard_step_1_description">Hi! In order to use your Mi Band fitness tracker, first I need to ask you some details.</string>
 </resources>

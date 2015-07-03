@@ -1,6 +1,8 @@
 package com.betomaluje.android.miband;
 
 import android.app.ActivityManager;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -10,6 +12,8 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AlertDialog;
@@ -26,6 +30,7 @@ import com.betomaluje.android.miband.core.bluetooth.MiBandWrapper;
 import com.betomaluje.android.miband.core.bluetooth.NotificationConstants;
 import com.betomaluje.android.miband.core.colorpicker.ColorPickerDialog;
 import com.betomaluje.android.miband.core.model.BatteryInfo;
+import com.betomaluje.android.miband.wizard.UserWizardActivity;
 
 import java.util.HashMap;
 
@@ -35,7 +40,7 @@ public class MainActivity extends ActionBarActivity {
 
     private int BT_REQUEST_CODE = 1001;
 
-    private Button btn_connect, btn_lights, btn_lights_2, btn_vibrate, btn_battery;
+    private Button btn_connect, btn_lights, btn_notification, btn_vibrate, btn_battery;
     private TextView textView_status;
 
     private boolean isConnected = false;
@@ -71,6 +76,15 @@ public class MainActivity extends ActionBarActivity {
             } else if (action.equals(NotificationConstants.MI_BAND_BATTERY)) {
                 BatteryInfo batteryInfo = b.getParcelable("battery");
                 textView_status.setText(batteryInfo.toString());
+            } else if (action.equals(NotificationConstants.MI_BAND_REQUEST_CONNECTION) && b.containsKey("isConnected")) {
+                isConnected = b.getBoolean("isConnected", false);
+                Log.d(TAG, "requested connection: " + isConnected);
+
+                if (isConnected) {
+                    startMiBand();
+                } else {
+                    stopMiBand();
+                }
             }
         }
     };
@@ -81,26 +95,60 @@ public class MainActivity extends ActionBarActivity {
         setContentView(R.layout.activity_main);
 
         //Ask for permission to intercept notifications on first run.
-        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
         if (sharedPrefs.getBoolean("firstrun", true)) {
-            sharedPrefs.edit().putBoolean("firstrun", false).apply();
-            Intent enableIntent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
-            startActivity(enableIntent);
+            //sharedPrefs.edit().putBoolean("firstrun", false).apply();
+
+            startActivity(new Intent(MainActivity.this, UserWizardActivity.class));
+            finish();
+        } else {
+            if (sharedPrefs.getBoolean("notification_permission", true)) {
+                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
+                        MainActivity.this);
+
+                // set title
+                alertDialogBuilder.setTitle("Need Permission");
+
+                // set dialog message
+                alertDialogBuilder
+                        .setMessage("In order to notify you of any new notification, we need to configure the settings in your phone. Would yo like to go now?")
+                        .setCancelable(false)
+                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                sharedPrefs.edit().putBoolean("notification_permission", false).apply();
+                                Intent enableIntent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+                                startActivity(enableIntent);
+                            }
+                        })
+                        .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                // if this button is clicked, just close
+                                // the dialog box and do nothing
+                                dialog.cancel();
+                            }
+                        });
+
+                // create alert dialog
+                AlertDialog alertDialog = alertDialogBuilder.create();
+
+                // show it
+                alertDialog.show();
+            }
+
+            btn_connect = (Button) findViewById(R.id.btn_connect);
+            btn_lights = (Button) findViewById(R.id.btn_lights);
+            btn_notification = (Button) findViewById(R.id.btn_notification);
+            btn_vibrate = (Button) findViewById(R.id.btn_vibrate);
+            btn_battery = (Button) findViewById(R.id.btn_battery);
+
+            textView_status = (TextView) findViewById(R.id.textView_status);
+
+            btn_connect.setOnClickListener(btnListener);
+            btn_lights.setOnClickListener(btnListener);
+            btn_notification.setOnClickListener(btnListener);
+            btn_vibrate.setOnClickListener(btnListener);
+            btn_battery.setOnClickListener(btnListener);
         }
-
-        btn_connect = (Button) findViewById(R.id.btn_connect);
-        btn_lights = (Button) findViewById(R.id.btn_lights);
-        btn_lights_2 = (Button) findViewById(R.id.btn_lights_2);
-        btn_vibrate = (Button) findViewById(R.id.btn_vibrate);
-        btn_battery = (Button) findViewById(R.id.btn_battery);
-
-        textView_status = (TextView) findViewById(R.id.textView_status);
-
-        btn_connect.setOnClickListener(btnListener);
-        btn_lights.setOnClickListener(btnListener);
-        btn_lights_2.setOnClickListener(btnListener);
-        btn_vibrate.setOnClickListener(btnListener);
-        btn_battery.setOnClickListener(btnListener);
     }
 
     @Override
@@ -119,7 +167,7 @@ public class MainActivity extends ActionBarActivity {
         ActivityManager manager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
             if (MiBandService.class.getName().equals(service.service.getClassName())) {
-                isConnected = true;
+                MiBandWrapper.getInstance(MainActivity.this).sendAction(MiBandWrapper.ACTION_REQUEST_CONNECTION);
                 break;
             }
         }
@@ -158,8 +206,8 @@ public class MainActivity extends ActionBarActivity {
                     }).show();
 
                     break;
-                case R.id.btn_lights_2:
-
+                case R.id.btn_notification:
+                    createNotification("Test", MainActivity.this);
                     break;
                 case R.id.btn_vibrate:
                     textView_status.setText("Vibrating");
@@ -171,6 +219,36 @@ public class MainActivity extends ActionBarActivity {
             }
         }
     };
+
+    public void createNotification(String text, Context context) {
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(context)
+                        .setSmallIcon(R.drawable.notification_template_icon_bg)
+                        .setContentTitle("Test notification")
+                        .setContentText(text);
+        // Creates an explicit intent for an Activity in your app
+        Intent resultIntent = new Intent(context, MainActivity.class);
+
+        // The stack builder object will contain an artificial back stack for the
+        // started Activity.
+        // This ensures that navigating backward from the Activity leads out of
+        // your application to the Home screen.
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(context);
+        // Adds the back stack for the Intent (but not the Intent itself)
+        stackBuilder.addParentStack(MainActivity.class);
+        // Adds the Intent that starts the Activity to the top of the stack
+        stackBuilder.addNextIntent(resultIntent);
+        PendingIntent resultPendingIntent =
+                stackBuilder.getPendingIntent(
+                        0,
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                );
+        mBuilder.setContentIntent(resultPendingIntent);
+        NotificationManager mNotificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        // mId allows you to update the notification later on.
+        mNotificationManager.notify(676, mBuilder.build());
+    }
 
     private void connectToMiBand() {
         MiBand.init(MainActivity.this);
@@ -219,7 +297,7 @@ public class MainActivity extends ActionBarActivity {
         textView_status.setText("Connected");
 
         btn_lights.setEnabled(true);
-        btn_lights_2.setEnabled(true);
+        btn_notification.setEnabled(true);
         btn_vibrate.setEnabled(true);
         btn_battery.setEnabled(true);
     }
@@ -232,7 +310,7 @@ public class MainActivity extends ActionBarActivity {
         btn_connect.setEnabled(true);
 
         btn_lights.setEnabled(false);
-        btn_lights_2.setEnabled(false);
+        btn_notification.setEnabled(false);
         btn_vibrate.setEnabled(false);
         btn_battery.setEnabled(false);
 
@@ -245,7 +323,10 @@ public class MainActivity extends ActionBarActivity {
 
         if (requestCode == BT_REQUEST_CODE) {
             if (resultCode == RESULT_OK) {
-                connectToMiBand();
+                //connectToMiBand();
+                btn_connect.setEnabled(false);
+
+                textView_status.setText("Connecting...");
             } else {
                 stopMiBand();
             }

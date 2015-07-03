@@ -4,8 +4,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.betomaluje.android.miband.core.bluetooth.BluetoothIO;
@@ -24,18 +22,16 @@ import java.util.HashMap;
 
 public class MiBand {
 
-    private static final String TAG = "miband-android";
-
-    private static Context context;
-    private static BluetoothIO io;
-
     private ActionCallback connectionCallback;
 
+    private static final String TAG = "miband-android";
+    private static Context context;
+    private static BluetoothIO io;
     private static MiBand instance;
     private static MiBandWrapper miBandWrapper;
     private static Intent miBandService;
 
-    public static MiBand getInstance(Context context) {
+    public synchronized static MiBand getInstance(Context context) {
         if (instance == null) {
             instance = new MiBand(context);
         } else {
@@ -52,11 +48,13 @@ public class MiBand {
     }
 
     public static void init(Context context) {
-        if(miBandService == null) {
+        if (miBandService == null) {
             miBandService = new Intent(context, MiBandService.class);
             miBandService.setAction(NotificationConstants.MI_BAND_CONNECT);
 
             context.startService(miBandService);
+        } else {
+            sendAction(MiBandWrapper.ACTION_CONNECT);
         }
     }
 
@@ -84,6 +82,7 @@ public class MiBand {
     }
 
     public static void disconnect() {
+        Log.e(TAG, "Disconnecting Mi Band...");
         MiBand.context.stopService(miBandService);
         MiBand.io.disconnect();
     }
@@ -112,7 +111,7 @@ public class MiBand {
      * @return data = null
      */
     public void pair() {
-        //Log.d(TAG, "Pairing...");
+        Log.d(TAG, "Pairing...");
 
         ActionCallback ioCallback = new ActionCallback() {
 
@@ -121,8 +120,11 @@ public class MiBand {
                 BluetoothGattCharacteristic characteristic = (BluetoothGattCharacteristic) data;
                 //Log.d(TAG, "pair result " + Arrays.toString(characteristic.getValue()));
                 if (characteristic.getValue().length == 1 && characteristic.getValue()[0] == 2) {
-                    //Log.d(TAG, "Pairing success!");
-                    setUserInfo(null);
+                    Log.d(TAG, "Pairing success!");
+
+                    setUserInfo(UserInfo.getSavedUser(context));
+
+                    //setUserInfo(null);
                     connectionCallback.onSuccess(null);
                 } else {
                     connectionCallback.onFail(-1, "failed to pair with Mi Band");
@@ -144,10 +146,15 @@ public class MiBand {
     private ActionCallback myConnectionCallback = new ActionCallback() {
         @Override
         public void onSuccess(Object data) {
-            //Log.d(TAG, "Connection success, now pair");
-            pair();
-            //setUserInfo(null);
-            //connectionCallback.onSuccess(null);
+            Log.d(TAG, "Connection success, now pair: " + data);
+
+            if (!(Boolean) data) {
+                pair();
+            } else {
+                setUserInfo(UserInfo.getSavedUser(context));
+                connectionCallback.onSuccess(null);
+            }
+
         }
 
         @Override
@@ -405,11 +412,16 @@ public class MiBand {
 
         BluetoothDevice device = MiBand.io.getDevice();
 
-        if (userInfo == null)
-            userInfo = UserInfo.getDefault(device.getAddress());
+        if (userInfo == null) {
+            userInfo = UserInfo.getDefault(device.getAddress(), context);
+        }
 
-        //MiBand.io.writeCharacteristic(Profile.UUID_CHAR_USER_INFO, userInfo.getBytes(device.getAddress()), null);
         MiBand.io.writeCharacteristic(Profile.UUID_CHAR_USER_INFO, userInfo.getData(), null);
+    }
+
+    public void setUserInfo(int gender, int age, int height, int weight, String alias) {
+        UserInfo user = UserInfo.create(MiBand.io.getDevice().getAddress(), gender, age, height, weight, alias, 0);
+        MiBand.io.writeCharacteristic(Profile.UUID_CHAR_USER_INFO, user.getData(), null);
     }
 
     /**
@@ -423,4 +435,6 @@ public class MiBand {
 
         MiBand.io.writeCharacteristic(Profile.UUID_CHAR_TEST, Protocol.SELF_TEST, null);
     }
+
+
 }

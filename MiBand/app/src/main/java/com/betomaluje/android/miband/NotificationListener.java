@@ -106,13 +106,14 @@ public class NotificationListener extends NotificationListenerService {
                 source.equals("com.android.dialer") ||
                 source.equals("com.android.mms") ||
                 source.equals("com.cyanogenmod.eleven") ||
-                source.equals("com.fsck.k9")) {
+                source.equals("com.fsck.k9") ||
+                source.startsWith("com.motorola")) {
             return;
         }
 
         //if we have a valid notification, we need to post it to Mi Band Service
         Log.i(TAG, "Processing notification from source " + source);
-        MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE_WITHOUT_LED);
+        MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE_WITH_LED);
 
         /*
         Bundle extras = notification.extras;
