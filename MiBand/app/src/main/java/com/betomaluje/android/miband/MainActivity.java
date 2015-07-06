@@ -11,8 +11,10 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.content.LocalBroadcastManager;
@@ -42,7 +44,7 @@ public class MainActivity extends ActionBarActivity {
 
     private int BT_REQUEST_CODE = 1001;
 
-    private Button btn_connect, btn_lights, btn_notification, btn_vibrate, btn_battery, btn_water, btn_water_cancel;
+    private Button btn_connect, btn_lights, btn_lights_2, btn_notification, btn_vibrate, btn_battery, btn_water, btn_water_cancel, btn_apps;
     private TextView textView_status;
 
     private boolean isConnected = false;
@@ -150,21 +152,25 @@ public class MainActivity extends ActionBarActivity {
 
             btn_connect = (Button) findViewById(R.id.btn_connect);
             btn_lights = (Button) findViewById(R.id.btn_lights);
+            btn_lights_2 = (Button) findViewById(R.id.btn_lights_2);
             btn_notification = (Button) findViewById(R.id.btn_notification);
             btn_vibrate = (Button) findViewById(R.id.btn_vibrate);
             btn_battery = (Button) findViewById(R.id.btn_battery);
             btn_water = (Button) findViewById(R.id.btn_water);
             btn_water_cancel = (Button) findViewById(R.id.btn_water_cancel);
+            btn_apps = (Button) findViewById(R.id.btn_apps);
 
             textView_status = (TextView) findViewById(R.id.textView_status);
 
             btn_connect.setOnClickListener(btnListener);
             btn_lights.setOnClickListener(btnListener);
+            btn_lights_2.setOnClickListener(btnListener);
             btn_notification.setOnClickListener(btnListener);
             btn_vibrate.setOnClickListener(btnListener);
             btn_battery.setOnClickListener(btnListener);
             btn_water.setOnClickListener(btnListener);
             btn_water_cancel.setOnClickListener(btnListener);
+            btn_apps.setOnClickListener(btnListener);
         }
     }
 
@@ -207,7 +213,6 @@ public class MainActivity extends ActionBarActivity {
                         disconnectMiBand();
                     break;
                 case R.id.btn_lights:
-
                     new ColorPickerDialog(MainActivity.this, 255, new ColorPickerDialog.OnColorSelectedListener() {
                         @Override
                         public void onColorSelected(int rgb) {
@@ -221,6 +226,26 @@ public class MainActivity extends ActionBarActivity {
                             MiBand.sendAction(MiBandWrapper.ACTION_LIGHTS, params);
                         }
                     }).show();
+
+                    break;
+                case R.id.btn_lights_2:
+                    new ColorPickerDialog(MainActivity.this, 255, new ColorPickerDialog.OnColorSelectedListener() {
+                        @Override
+                        public void onColorSelected(int rgb) {
+                            Log.i(TAG, "cool selected color: " + rgb);
+
+                            textView_status.setText("Playing with cool lights! Color: " + rgb);
+
+                            HashMap<String, Integer> params = new HashMap<String, Integer>();
+                            params.put("color", rgb);
+                            //params.put("color_2", -15663358);
+                            params.put("pause_time", 500);
+
+                            //MiBand.sendAction(MiBandWrapper.ACTION_LIGHTS, params);
+                            MiBand.sendAction(MiBandWrapper.ACTION_NOTIFY, params);
+                        }
+                    }).show();
+
 
                     break;
                 case R.id.btn_notification:
@@ -241,6 +266,9 @@ public class MainActivity extends ActionBarActivity {
                         alarmManager.cancel(pendingIntent);
                         Toast.makeText(MainActivity.this, "Water alarm deactivated", Toast.LENGTH_LONG).show();
                     }
+                    break;
+                case R.id.btn_apps:
+                    thumbNailScaleAnimation(v);
                     break;
             }
         }
@@ -323,6 +351,7 @@ public class MainActivity extends ActionBarActivity {
         textView_status.setText("Connected");
 
         btn_lights.setEnabled(true);
+        btn_lights_2.setEnabled(true);
         btn_notification.setEnabled(true);
         btn_vibrate.setEnabled(true);
         btn_battery.setEnabled(true);
@@ -336,6 +365,7 @@ public class MainActivity extends ActionBarActivity {
         btn_connect.setEnabled(true);
 
         btn_lights.setEnabled(false);
+        btn_lights_2.setEnabled(false);
         btn_notification.setEnabled(false);
         btn_vibrate.setEnabled(false);
         btn_battery.setEnabled(false);
@@ -355,6 +385,19 @@ public class MainActivity extends ActionBarActivity {
                 Toast.makeText(MainActivity.this, "Next Water alarm set for tomorrow at 8 am", Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void thumbNailScaleAnimation(View view) {
+        view.setDrawingCacheEnabled(true);
+        view.setPressed(false);
+        view.refreshDrawableState();
+        Bitmap bitmap = view.getDrawingCache();
+        ActivityOptionsCompat opts = ActivityOptionsCompat.makeThumbnailScaleUpAnimation(
+                view, bitmap, 0, 0);
+        // Request the activity be started, using the custom animation options.
+        startActivity(new Intent(MainActivity.this, AppsPreferencesActivity.class),
+                opts.toBundle());
+        view.setDrawingCacheEnabled(false);
     }
 
     @Override

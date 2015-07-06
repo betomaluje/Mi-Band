@@ -32,12 +32,21 @@
         android:enabled="false"/>
 
     <Button
+        android:id="@+id/btn_lights_2"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/btn_lights"
+        android:layout_below="@+id/btn_lights"
+        android:text="Cool Lights"
+        android:enabled="false"/>
+
+    <Button
         android:id="@+id/btn_notification"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/btn_lights"
+        android:layout_below="@+id/btn_lights_2"
         android:layout_centerHorizontal="true"
-        android:text="Test Notificaiton"
+        android:text="Test Notification"
         android:enabled="false"/>
 
     <Button
@@ -72,6 +81,14 @@
         android:layout_height="wrap_content"
         android:text="Cancel water"
         android:layout_below="@+id/btn_water"
+        android:layout_centerHorizontal="true"/>
+
+    <Button
+        android:id="@+id/btn_apps"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:text="View apps"
+        android:layout_below="@+id/btn_water_cancel"
         android:layout_centerHorizontal="true"/>
 
 </RelativeLayout>

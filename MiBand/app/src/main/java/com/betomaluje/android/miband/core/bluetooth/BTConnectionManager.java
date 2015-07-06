@@ -189,7 +189,7 @@ public class BTConnectionManager {
     }
 
     public boolean isConnected() {
-        return isConnected;
+        return isConnected && adapter.isEnabled();
     }
 
     public BluetoothDevice getDevice() {
@@ -211,6 +211,8 @@ public class BTConnectionManager {
             super.onConnectionStateChange(gatt, status, newState);
 
             //Log.e(TAG, "onConnectionStateChange (2): " + newState);
+
+            BTConnectionManager.this.gatt = gatt;
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 gatt.discoverServices();

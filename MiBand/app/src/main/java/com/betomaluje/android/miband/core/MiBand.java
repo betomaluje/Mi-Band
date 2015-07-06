@@ -4,6 +4,8 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.betomaluje.android.miband.core.bluetooth.BTCommandManager;
@@ -371,33 +373,39 @@ public class MiBand {
     /**
      * Sends a custom notification to the Mi Band
      */
-    public void setLedColor(int flashTimes, int flashColour, int originalColour) {
-        final byte[] flashColours = convertRgb(flashColour, true);
-        final byte[] originalColours = convertRgb(originalColour, false);
-
-        for (int i = 1; i <= flashTimes; i++) {
-
-            //list.add(new WriteAction(MiBandConstants.UUID_CHARACTERISTIC_CONTROL_POINT, new byte[]{14, flashColours[0], flashColours[1], flashColours[2], (byte) 1}));
-            //list.add(new WaitAction(500L));
-            //list.add(new WriteAction(MiBandConstants.UUID_CHARACTERISTIC_CONTROL_POINT, new byte[]{14, originalColours[0], originalColours[1], originalColours[2], (byte) 0}));
-            //list.add(new WaitAction(500L));
-
-            setColor(flashColours);
-
-            try {
-                Thread.sleep(500l);
-            } catch (InterruptedException e) {
-                Log.e(TAG, "error notification: " + e.getMessage());
+    public synchronized void setLedColor(final int flashTimes, final int flashColour, final int originalColour, final long flashDuration) {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < flashTimes; i++) {
+                    try {
+                        setLedColor(flashColour);
+                        Thread.sleep(flashDuration);
+                        setLedColor(originalColour, false);
+                        Thread.sleep(flashDuration);
+                    } catch (InterruptedException e) {
+                        Log.e(TAG, "error notification: " + e.getMessage());
+                    }
+                }
             }
+        });
+    }
 
-            setColor(originalColours);
-
-            try {
-                Thread.sleep(500l);
-            } catch (InterruptedException e) {
-                Log.e(TAG, "error notification: " + e.getMessage());
+    public synchronized void notifyBand(final int vibrateTimes, final int flashColour, final long pauseTime) {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < vibrateTimes; i++) {
+                    try {
+                        startVibration(VibrationMode.VIBRATION_WITHOUT_LED);
+                        Thread.sleep(pauseTime);
+                        setLedColor(flashColour);
+                    } catch (InterruptedException e) {
+                        Log.e(TAG, "error notification: " + e.getMessage());
+                    }
+                }
             }
-        }
+        });
     }
 
     /**

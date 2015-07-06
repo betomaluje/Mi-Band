@@ -17,6 +17,10 @@ import com.betomaluje.android.miband.core.MiBand;
 import com.betomaluje.android.miband.core.MiBandService;
 import com.betomaluje.android.miband.core.bluetooth.MiBandWrapper;
 import com.betomaluje.android.miband.core.bluetooth.NotificationConstants;
+import com.betomaluje.android.miband.models.App;
+import com.betomaluje.android.miband.sqlite.AppsSQLite;
+
+import java.util.HashMap;
 
 /**
  * Created by betomaluje on 6/30/15.
@@ -54,6 +58,8 @@ public class NotificationListener extends NotificationListenerService {
     @Override
     public void onNotificationPosted(final StatusBarNotification sbn) {
         super.onNotificationPosted(sbn);
+
+        if (!shouldWeNotify(sbn)) return;
 
         /*
         We get the MiBand instance. If we are connected, we handle the status bar notification and send the info to the Mi Band.
@@ -103,31 +109,34 @@ public class NotificationListener extends NotificationListenerService {
     }
 
     private void handleNotification(StatusBarNotification sbn) {
-        if (shouldWeNotify(sbn)) {
-            //only if we have a valid notification, we need to post it to Mi Band Service
-            MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE_WITH_LED);
+        //only if we have a valid notification, we need to post it to Mi Band Service
+        //MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE_WITH_LED);
 
-            MiBandWrapper.getInstance(NotificationListener.this).sendAction(MiBandWrapper.ACTION_REQUEST_CONNECTION);
-        }
+        App app = AppsSQLite.getInstance(NotificationListener.this).getApp(sbn.getPackageName());
+
+        HashMap<String, Integer> params = new HashMap<String, Integer>();
+        params.put("color", app.getColor());
+        params.put("pause_time", app.getPauseTime());
+
+        MiBand.sendAction(MiBandWrapper.ACTION_NOTIFY, params);
+
+        MiBandWrapper.getInstance(NotificationListener.this).sendAction(MiBandWrapper.ACTION_REQUEST_CONNECTION);
     }
 
     private boolean shouldWeNotify(StatusBarNotification sbn) {
-        boolean shouldWe = true;
-
         String source = sbn.getPackageName();
         Notification notification = sbn.getNotification();
 
         Log.i(TAG, "Processing notification from source " + source);
 
         if ((notification.flags & Notification.FLAG_ONGOING_EVENT) == Notification.FLAG_ONGOING_EVENT) {
-            shouldWe = false;
+            return false;
         }
 
         /* do not display messages from "android"
          * This includes keyboard selection message, usb connection messages, etc
          * Hope it does not filter out too much, we will see...
          */
-
         if (source.equals("android") ||
                 source.equals("com.android.systemui") ||
                 source.equals("com.android.dialer") ||
@@ -136,10 +145,12 @@ public class NotificationListener extends NotificationListenerService {
                 source.equals("com.fsck.k9") ||
                 source.startsWith("com.motorola")) {
 
-            shouldWe = false;
+            return false;
         }
 
-        return shouldWe;
+        App app = AppsSQLite.getInstance(NotificationListener.this).getApp(source);
+
+        return app != null && app.shouldWeNotify();
     }
 
     @Override

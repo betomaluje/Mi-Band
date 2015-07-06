@@ -41,7 +41,17 @@ public class MiBandService extends Service {
 
                         int color = b.getInt("color", 255);
 
-                        miBand.setLedColor(color);
+                        if (b.containsKey("flash_times") && b.containsKey("color_2")) {
+                            //with flashing
+                            int flash_time = b.getInt("flash_times", 3);
+                            int color_2 = b.getInt("color_2", 255);
+
+                            miBand.setLedColor(flash_time, color, color_2, 1000L);
+                        } else {
+                            //normal flashing
+                            miBand.setLedColor(color);
+                        }
+
                     }
                     break;
                 case NotificationConstants.MI_BAND_VIBRATE_WITH_LED:
@@ -57,6 +67,16 @@ public class MiBandService extends Service {
                 case NotificationConstants.MI_BAND_VIBRATE_WITHOUT_LED:
 
                     miBand.startVibration(VibrationMode.VIBRATION_WITHOUT_LED);
+
+                    break;
+                case NotificationConstants.MI_BAND_NEW_NOTIFICATION:
+                    if (b.containsKey("color") && b.containsKey("pause_time")) {
+
+                        int color = b.getInt("color", 255);
+                        int pause_time = b.getInt("pause_time", 500);
+
+                        miBand.notifyBand(3, color, pause_time);
+                    }
 
                     break;
                 case NotificationConstants.MI_BAND_BATTERY:

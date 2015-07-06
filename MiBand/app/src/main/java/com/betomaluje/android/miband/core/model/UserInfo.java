@@ -267,13 +267,13 @@ public class UserInfo {
         String alias = sharedPrefs.getString(KEY_ALIAS, "");
         int type = sharedPrefs.getInt(KEY_TYPE, -1);
 
-        String TAG = "UserInfo";
-        Log.e(TAG, "address: " + btAddress);
-        Log.e(TAG, "gender: " + gender);
-        Log.e(TAG, "age: " + age);
-        Log.e(TAG, "height: : " + height);
-        Log.e(TAG, "weight: " + weight);
-        Log.e(TAG, "alias: " + alias);
+        //String TAG = "UserInfo";
+        //Log.e(TAG, "address: " + btAddress);
+        //Log.e(TAG, "gender: " + gender);
+        //Log.e(TAG, "age: " + age);
+        //Log.e(TAG, "height: : " + height);
+        //Log.e(TAG, "weight: " + weight);
+        //Log.e(TAG, "alias: " + alias);
 
         return create(btAddress, gender, age, height, weight, alias, type);
     }
