@@ -1,6 +1,7 @@
 package com.betomaluje.android.miband;
 
 import android.app.ActivityManager;
+import android.app.AlarmManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
@@ -23,6 +24,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.betomaluje.android.miband.core.MiBand;
 import com.betomaluje.android.miband.core.MiBandService;
@@ -40,10 +42,13 @@ public class MainActivity extends ActionBarActivity {
 
     private int BT_REQUEST_CODE = 1001;
 
-    private Button btn_connect, btn_lights, btn_notification, btn_vibrate, btn_battery;
+    private Button btn_connect, btn_lights, btn_notification, btn_vibrate, btn_battery, btn_water, btn_water_cancel;
     private TextView textView_status;
 
     private boolean isConnected = false;
+
+    private PendingIntent pendingIntent;
+    private AlarmManager alarmManager;
 
     private BroadcastReceiver bluetoothStatusReceiver = new BroadcastReceiver() {
         @Override
@@ -85,6 +90,9 @@ public class MainActivity extends ActionBarActivity {
                 } else {
                     stopMiBand();
                 }
+            } else if (action.equals("CANCEL_WATER")) {
+                if (alarmManager != null)
+                    alarmManager.cancel(pendingIntent);
             }
         }
     };
@@ -93,6 +101,11 @@ public class MainActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Intent alarmIntent = new Intent(this, WaterReceiver.class);
+        pendingIntent = PendingIntent.getBroadcast(this, 0, alarmIntent, 0);
+
+        alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
         //Ask for permission to intercept notifications on first run.
         final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
@@ -140,6 +153,8 @@ public class MainActivity extends ActionBarActivity {
             btn_notification = (Button) findViewById(R.id.btn_notification);
             btn_vibrate = (Button) findViewById(R.id.btn_vibrate);
             btn_battery = (Button) findViewById(R.id.btn_battery);
+            btn_water = (Button) findViewById(R.id.btn_water);
+            btn_water_cancel = (Button) findViewById(R.id.btn_water_cancel);
 
             textView_status = (TextView) findViewById(R.id.textView_status);
 
@@ -148,6 +163,8 @@ public class MainActivity extends ActionBarActivity {
             btn_notification.setOnClickListener(btnListener);
             btn_vibrate.setOnClickListener(btnListener);
             btn_battery.setOnClickListener(btnListener);
+            btn_water.setOnClickListener(btnListener);
+            btn_water_cancel.setOnClickListener(btnListener);
         }
     }
 
@@ -216,6 +233,15 @@ public class MainActivity extends ActionBarActivity {
                 case R.id.btn_battery:
                     MiBand.sendAction(MiBandWrapper.ACTION_BATTERY);
                     break;
+                case R.id.btn_water:
+                    scheduleWater();
+                    break;
+                case R.id.btn_water_cancel:
+                    if (alarmManager != null) {
+                        alarmManager.cancel(pendingIntent);
+                        Toast.makeText(MainActivity.this, "Water alarm deactivated", Toast.LENGTH_LONG).show();
+                    }
+                    break;
             }
         }
     };
@@ -251,7 +277,7 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void connectToMiBand() {
-        MiBand.init(MainActivity.this);
+        MiBand.initService(MainActivity.this);
 
         btn_connect.setEnabled(false);
 
@@ -315,6 +341,20 @@ public class MainActivity extends ActionBarActivity {
         btn_battery.setEnabled(false);
 
         isConnected = false;
+    }
+
+    private void scheduleWater() {
+        WaterScheduler.getInstance(MainActivity.this).schedule(new WaterScheduler.ScheduleCallback() {
+            @Override
+            public void OnScheduleNext() {
+                Toast.makeText(MainActivity.this, "Water alarm activated every 45 minutes", Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void OnScheduleTomorrow() {
+                Toast.makeText(MainActivity.this, "Next Water alarm set for tomorrow at 8 am", Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     @Override

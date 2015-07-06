@@ -12,6 +12,7 @@ import android.service.notification.StatusBarNotification;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import com.betomaluje.android.miband.core.ActionCallback;
 import com.betomaluje.android.miband.core.MiBand;
 import com.betomaluje.android.miband.core.MiBandService;
 import com.betomaluje.android.miband.core.bluetooth.MiBandWrapper;
@@ -51,16 +52,39 @@ public class NotificationListener extends NotificationListenerService {
     }
 
     @Override
-    public void onNotificationPosted(StatusBarNotification sbn) {
+    public void onNotificationPosted(final StatusBarNotification sbn) {
         super.onNotificationPosted(sbn);
 
-         /*
-        * return early if BluetoothCommunicationService is not running,
-        * else the service would get started every time we get a notification.
-        * unfortunately we cannot enable/disable NotificationListener at runtime like we do with
-        * broadcast receivers because it seems to invalidate the permissions that are
-        * necessary for NotificationListener
-        */
+        /*
+        We get the MiBand instance. If we are connected, we handle the status bar notification and send the info to the Mi Band.
+        If we are not connected, we connect and wait for the success callback. Then we handle the status bar notification
+         */
+        MiBand miBand = MiBand.getInstance(NotificationListener.this);
+
+        Log.i(TAG, "miBand connected: " + miBand.isConnected());
+
+        if (!miBand.isConnected()) {
+            miBand.connect(new ActionCallback() {
+                @Override
+                public void onSuccess(Object data) {
+                    checkService();
+
+                    handleNotification(sbn);
+                }
+
+                @Override
+                public void onFail(int errorCode, String msg) {
+                    Log.i(TAG, "onFail: " + msg);
+                }
+            });
+        } else {
+            checkService();
+
+            handleNotification(sbn);
+        }
+    }
+
+    private void checkService() {
         boolean isServiceRunning = false;
         ActivityManager manager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
@@ -74,26 +98,29 @@ public class NotificationListener extends NotificationListenerService {
 
         //if the service is not running, we start it
         if (!isServiceRunning) {
-            MiBand.getInstance(NotificationListener.this);
-            MiBand.init(NotificationListener.this);
+            MiBand.initService(NotificationListener.this);
         }
+    }
 
-        /*
-        //check if user has the option "when screen on" also checked
-        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        if (!sharedPrefs.getBoolean("notifications_generic_whenscreenon", false)) {
-            PowerManager powermanager = (PowerManager) getSystemService(POWER_SERVICE);
-            if (powermanager.isScreenOn()) {
-                return;
-            }
+    private void handleNotification(StatusBarNotification sbn) {
+        if (shouldWeNotify(sbn)) {
+            //only if we have a valid notification, we need to post it to Mi Band Service
+            MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE_WITH_LED);
+
+            MiBandWrapper.getInstance(NotificationListener.this).sendAction(MiBandWrapper.ACTION_REQUEST_CONNECTION);
         }
-        */
+    }
+
+    private boolean shouldWeNotify(StatusBarNotification sbn) {
+        boolean shouldWe = true;
 
         String source = sbn.getPackageName();
         Notification notification = sbn.getNotification();
 
+        Log.i(TAG, "Processing notification from source " + source);
+
         if ((notification.flags & Notification.FLAG_ONGOING_EVENT) == Notification.FLAG_ONGOING_EVENT) {
-            return;
+            shouldWe = false;
         }
 
         /* do not display messages from "android"
@@ -108,24 +135,11 @@ public class NotificationListener extends NotificationListenerService {
                 source.equals("com.cyanogenmod.eleven") ||
                 source.equals("com.fsck.k9") ||
                 source.startsWith("com.motorola")) {
-            return;
+
+            shouldWe = false;
         }
 
-        //if we have a valid notification, we need to post it to Mi Band Service
-        Log.i(TAG, "Processing notification from source " + source);
-        MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE_WITH_LED);
-
-        /*
-        Bundle extras = notification.extras;
-        //String title = extras.getCharSequence(Notification.EXTRA_TITLE).toString();
-        String content = null;
-        if (extras.containsKey(Notification.EXTRA_TEXT)) {
-            CharSequence contentCS = extras.getCharSequence(Notification.EXTRA_TEXT);
-            if (contentCS != null) {
-                content = contentCS.toString();
-            }
-        }
-        */
+        return shouldWe;
     }
 
     @Override

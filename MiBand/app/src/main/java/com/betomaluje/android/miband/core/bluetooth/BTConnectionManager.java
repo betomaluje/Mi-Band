@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
@@ -30,9 +31,10 @@ public class BTConnectionManager {
     private Context context;
     private boolean mScanning = false;
     private boolean mFound = false;
+    private boolean mAlreadyPaired = false;
     private boolean isConnected = false;
 
-    private Handler mHandler = new Handler();
+    private Handler mHandler = new Handler(Looper.getMainLooper());
     private BluetoothAdapter adapter;
     private ActionCallback connectionCallback;
 
@@ -128,6 +130,7 @@ public class BTConnectionManager {
 
     private boolean tryPairedDevices() {
         String mDeviceAddress = "";
+        mAlreadyPaired = false;
 
         SharedPreferences sharedPreferences = context.getSharedPreferences(UserInfo.KEY_PREFERENCES, Context.MODE_PRIVATE);
         String btAddress = sharedPreferences.getString(UserInfo.KEY_BT_ADDRESS, "");
@@ -135,7 +138,8 @@ public class BTConnectionManager {
         if (btAddress != null) {
             if (!btAddress.equals("")) {
                 //we use our previously paired device
-                mFound = true;
+                //mFound = true;
+                mAlreadyPaired = true;
                 mDeviceAddress = btAddress;
             } else {
                 //we search for paired devices
@@ -144,16 +148,17 @@ public class BTConnectionManager {
                 for (BluetoothDevice pairedDevice : pairedDevices) {
                     if (pairedDevice.getName().equals("MI") && pairedDevice.getAddress().startsWith("88:0F:10")) {
                         mDeviceAddress = pairedDevice.getAddress();
-                        mFound = true;
+                        //mFound = true;
+                        mAlreadyPaired = true;
                         break;
                     }
                 }
             }
 
-            if (mFound && !mDeviceAddress.equals("")) {
+            if (mAlreadyPaired && !mDeviceAddress.equals("")) {
                 mDeviceAddress = btAddress;
             } else {
-                mFound = false;
+                mAlreadyPaired = false;
             }
         } else {
             //we search only for paired devices
@@ -162,24 +167,25 @@ public class BTConnectionManager {
             for (BluetoothDevice pairedDevice : pairedDevices) {
                 if (pairedDevice.getName().equals("MI") && pairedDevice.getAddress().startsWith("88:0F:10")) {
                     mDeviceAddress = pairedDevice.getAddress();
-                    mFound = true;
+                    //mFound = true;
+                    mAlreadyPaired = true;
                     break;
                 }
             }
         }
 
-        if (mFound) {
+        if (mAlreadyPaired) {
             Log.i(TAG, "already paired!");
             BluetoothDevice mBluetoothMi = adapter.getRemoteDevice(mDeviceAddress);
             mBluetoothMi.connectGatt(context, false, btleGattCallback);
             //mGatt.connect();
         }
 
-        return mFound;
+        return mAlreadyPaired;
     }
 
     public boolean isAlreadyPaired() {
-        return mFound;
+        return mAlreadyPaired;
     }
 
     public boolean isConnected() {
@@ -210,9 +216,7 @@ public class BTConnectionManager {
                 gatt.discoverServices();
             } else {
                 Log.e(TAG, "onConnectionStateChange disconnect: " + newState);
-                //disconnect();
-                isConnected = false;
-                //connect(context, this.connectionCallback);
+                disconnect();
             }
         }
 

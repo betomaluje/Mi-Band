@@ -49,6 +49,8 @@
             </intent-filter>
         </service>
 
+        <receiver android:name=".WaterReceiver" />
+
     </application>
 
 </manifest>

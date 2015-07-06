@@ -60,7 +60,8 @@ public class MiBand {
                     pair();
                 } else {
                     setUserInfo(UserInfo.getSavedUser(context));
-                    connectionCallback.onSuccess(null);
+                    if (connectionCallback != null)
+                        connectionCallback.onSuccess(null);
                 }
 
             }
@@ -68,14 +69,15 @@ public class MiBand {
             @Override
             public void onFail(int errorCode, String msg) {
                 Log.e(TAG, "Fail: " + msg);
-                connectionCallback.onFail(errorCode, msg);
+                if (connectionCallback != null)
+                    connectionCallback.onFail(errorCode, msg);
             }
         };
 
         MiBand.btConnectionManager = BTConnectionManager.getInstance(context, myConnectionCallback);
     }
 
-    public static void init(Context context) {
+    public static void initService(Context context) {
         miBandService = new Intent(context, MiBandService.class);
         miBandService.setAction(NotificationConstants.MI_BAND_CONNECT);
         context.startService(miBandService);
@@ -111,12 +113,9 @@ public class MiBand {
     }
 
     private void checkConnection() {
-        if (!isConnected() && connectionCallback != null) {
+        if (!isConnected()) {
             Log.e(TAG, "Not connected... Waiting for new connection...");
-            //MiBand.io.connect(context, myConnectionCallback);
             btConnectionManager.connect();
-        } else if (connectionCallback == null) {
-            throw new NullPointerException("Connection callback is null! Try using connect(ActionCallback) method first");
         }
     }
 
@@ -126,7 +125,7 @@ public class MiBand {
      * @return
      */
     public boolean isConnected() {
-        return MiBand.io != null && btConnectionManager != null && btConnectionManager.isConnected();
+        return btConnectionManager.isConnected();
     }
 
     /**
@@ -149,15 +148,18 @@ public class MiBand {
                     setUserInfo(UserInfo.getSavedUser(context));
 
                     //setUserInfo(null);
-                    connectionCallback.onSuccess(null);
+                    if (connectionCallback != null)
+                        connectionCallback.onSuccess(null);
                 } else {
-                    connectionCallback.onFail(-1, "failed to pair with Mi Band");
+                    if (connectionCallback != null)
+                        connectionCallback.onFail(-1, "failed to pair with Mi Band");
                 }
             }
 
             @Override
             public void onFail(int errorCode, String msg) {
-                connectionCallback.onFail(errorCode, msg);
+                if (connectionCallback != null)
+                    connectionCallback.onFail(errorCode, msg);
             }
         };
 
