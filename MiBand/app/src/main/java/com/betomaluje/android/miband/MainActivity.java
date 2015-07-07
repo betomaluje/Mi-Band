@@ -18,8 +18,9 @@ import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -38,7 +39,7 @@ import com.betomaluje.android.miband.wizard.UserWizardActivity;
 
 import java.util.HashMap;
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends AppCompatActivity {
 
     private final String TAG = getClass().getSimpleName();
 
@@ -103,6 +104,10 @@ public class MainActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+
+        setSupportActionBar(toolbar);
 
         Intent alarmIntent = new Intent(this, WaterReceiver.class);
         pendingIntent = PendingIntent.getBroadcast(this, 0, alarmIntent, 0);
@@ -238,7 +243,6 @@ public class MainActivity extends ActionBarActivity {
 
                             HashMap<String, Integer> params = new HashMap<String, Integer>();
                             params.put("color", rgb);
-                            //params.put("color_2", -15663358);
                             params.put("pause_time", 500);
 
                             //MiBand.sendAction(MiBandWrapper.ACTION_LIGHTS, params);

@@ -58,6 +58,11 @@ public class MiBand {
                 io = new BTCommandManager(btConnectionManager.getGatt());
                 btConnectionManager.setIo(io);
 
+                setUserInfo(UserInfo.getSavedUser(context));
+                if (connectionCallback != null)
+                    connectionCallback.onSuccess(null);
+
+                /*
                 if (!(Boolean) data) {
                     pair();
                 } else {
@@ -65,7 +70,7 @@ public class MiBand {
                     if (connectionCallback != null)
                         connectionCallback.onSuccess(null);
                 }
-
+                */
             }
 
             @Override

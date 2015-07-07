@@ -9,8 +9,6 @@ import android.util.Log;
 import com.betomaluje.android.miband.models.App;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 
 /**
  * Created by betomaluje on 7/6/15.
@@ -147,7 +145,7 @@ public class AppsSQLite {
 
         ArrayList<App> apps = new ArrayList<>();
 
-        String query = "SELECT * FROM " + TABLE_NAME;
+        String query = "SELECT * FROM " + TABLE_NAME + " ORDER BY notify DESC, name ASC";
 
         Cursor cursor = db.rawQuery(query, null);
 
@@ -161,12 +159,14 @@ public class AppsSQLite {
         cursor.close();
         db.close();
 
+        /*
         Collections.sort(apps, new Comparator<App>() {
             @Override
             public int compare(App lhs, App rhs) {
                 return lhs.getName().compareTo(rhs.getName());
             }
         });
+        */
 
         return apps;
     }

@@ -59,13 +59,17 @@ public class App implements Parcelable {
     }
 
     private void convertRgb(int rgb) {
-        red = ((rgb >> 16) & 0x0ff) / 42;
-        green = ((rgb >> 8) & 0x0ff) / 42;
-        blue = ((rgb) & 0x0ff) / 42;
+        red = Color.red(rgb);
+        green = Color.green(rgb);
+        blue = Color.blue(rgb);
     }
 
     public void setNotify(int shouldWe) {
         notify = shouldWe == 1;
+    }
+
+    public void setNotify(boolean shouldWe) {
+        notify = shouldWe;
     }
 
     public boolean isNotify() {

@@ -39,6 +39,14 @@
         </activity>
 
         <activity
+            android:name=".AppDetailActivity"
+            android:label="@string/wizard_title">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".AppsPreferencesActivity" />
+        </activity>
+
+        <activity
             android:name=".wizard.UserWizardActivity"
             android:label="@string/wizard_title">
             <meta-data

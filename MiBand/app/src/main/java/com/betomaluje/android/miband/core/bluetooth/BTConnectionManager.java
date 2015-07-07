@@ -177,7 +177,7 @@ public class BTConnectionManager {
         if (mAlreadyPaired) {
             Log.i(TAG, "already paired!");
             BluetoothDevice mBluetoothMi = adapter.getRemoteDevice(mDeviceAddress);
-            mBluetoothMi.connectGatt(context, false, btleGattCallback);
+            mBluetoothMi.connectGatt(context, true, btleGattCallback);
             //mGatt.connect();
         }
 
