@@ -19,7 +19,9 @@ public class MasterSQLiteHelper extends SQLiteOpenHelper {
             + "source TEXT NOT NULL,"
             + "color INTEGER NOT NULL,"
             + "notify INTEGER NOT NULL DEFAULT 0,"
-            + "pause_time INTEGER NOT NULL DEFAULT 500,"
+            + "pause_time INTEGER NOT NULL DEFAULT 250,"
+            + "on_time INTEGER NOT NULL DEFAULT 250,"
+            + "notification_time INTEGER NOT NULL DEFAULT 3,"
             + "start_time INTEGER,"
             + "end_time INTEGER,"
             + "UNIQUE(source) ON CONFLICT REPLACE);";

@@ -37,16 +37,19 @@ public class MiBandService extends Service {
                     connectMiBand();
                     break;
                 case NotificationConstants.MI_BAND_LIGHTS:
-                    if (b.containsKey("color")) {
 
-                        int color = b.getInt("color", 255);
+                    //miBand.setLedColor(LedColor.TEST);
 
-                        if (b.containsKey("flash_times") && b.containsKey("color_2")) {
+                    if (b.containsKey(NotificationConstants.KEY_COLOR_1)) {
+
+                        int color = b.getInt(NotificationConstants.KEY_COLOR_1, 255);
+
+                        if (b.containsKey(NotificationConstants.KEY_TIMES)) {
                             //with flashing
-                            int flash_time = b.getInt("flash_times", 3);
-                            int color_2 = b.getInt("color_2", 255);
+                            int flash_time = b.getInt(NotificationConstants.KEY_TIMES, 3);
+                            int pause_time = b.getInt(NotificationConstants.KEY_PAUSE_TIME, 1000);
 
-                            miBand.setLedColor(flash_time, color, color_2, 1000L);
+                            miBand.setLedColor(flash_time, color, pause_time);
                         } else {
                             //normal flashing
                             miBand.setLedColor(color);
@@ -69,14 +72,25 @@ public class MiBandService extends Service {
                     miBand.startVibration(VibrationMode.VIBRATION_WITHOUT_LED);
 
                     break;
+                case NotificationConstants.MI_BAND_VIBRATE_CUSTOM:
+
+                    int times = b.getInt(NotificationConstants.KEY_TIMES, 3);
+                    int on_time = b.getInt(NotificationConstants.KEY_ON_TIME, 250);
+                    int off_time = b.getInt(NotificationConstants.KEY_PAUSE_TIME, 500);
+
+                    miBand.customVibration(times, on_time, off_time);
+
+                    break;
                 case NotificationConstants.MI_BAND_NEW_NOTIFICATION:
-                    if (b.containsKey("color") && b.containsKey("pause_time")) {
+                    //if (b.containsKey(NotificationConstants.KEY_COLOR_1) && b.containsKey(NotificationConstants.KEY_PAUSE_TIME)) {
 
-                        int color = b.getInt("color", 255);
-                        int pause_time = b.getInt("pause_time", 500);
+                    int vibrate_times = b.getInt(NotificationConstants.KEY_TIMES, 3);
+                    int color = b.getInt(NotificationConstants.KEY_COLOR_1, 255);
+                    int flash_time = b.getInt(NotificationConstants.KEY_ON_TIME, 250);
+                    int pause_time = b.getInt(NotificationConstants.KEY_PAUSE_TIME, 500);
 
-                        miBand.notifyBand(3, color, pause_time);
-                    }
+                    miBand.notifyBand(vibrate_times, flash_time, pause_time, color);
+                    //}
 
                     break;
                 case NotificationConstants.MI_BAND_BATTERY:
@@ -97,7 +111,7 @@ public class MiBandService extends Service {
                     });
                     break;
                 case NotificationConstants.MI_BAND_REQUEST_CONNECTION:
-                    broadcastUpdate(NotificationConstants.MI_BAND_REQUEST_CONNECTION, miBand.isConnected());
+                    broadcastUpdate(NotificationConstants.MI_BAND_REQUEST_CONNECTION, miBand != null && miBand.isConnected());
                     break;
             }
         }

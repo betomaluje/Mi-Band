@@ -1,6 +1,11 @@
 package com.betomaluje.android.miband.core.model;
 
 public class Protocol {
+
+    public static final byte[] LOW_LATENCY_LEPARAMS = new byte[]{0x27, 0x00, 0x31, 0x00, 0x00, 0x00, (byte) 0xf4, 0x01, 0x00, 0x00, 0x00, 0x00};
+
+    public static final byte[] HIGH_LATENCY_LEPARAMS = new byte[]{(byte) 0xcc, 0x01, (byte) 0xf4, 0x01, 0x00, 0x00, (byte) 0xf4, 0x01, 0x00, 0x00, 0x00, 0x00};
+
     public static final byte[] PAIR = {2};
     public static final byte[] VIBRATION_WITH_LED = {8, 0};
     public static final byte[] VIBRATION_UNTIL_CALL_STOP = {8, 1};
@@ -12,6 +17,7 @@ public class Protocol {
     public static final byte[] COLOR_BLUE = {14, 0, 6, 6, 1};
     public static final byte[] COLOR_ORANGE = {14, 6, 2, 0, 1};
     public static final byte[] COLOR_GREEN = {14, 4, 5, 0, 1};
+    public static final byte[] COLOR_TEST = {14, 0, 1, 0, 1};
     //center-only blue (byte[] { 8, 1 };)
 
     public static final byte[] REBOOT = {12};

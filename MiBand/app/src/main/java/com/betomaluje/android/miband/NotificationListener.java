@@ -110,13 +110,14 @@ public class NotificationListener extends NotificationListenerService {
 
     private void handleNotification(StatusBarNotification sbn) {
         //only if we have a valid notification, we need to post it to Mi Band Service
-        //MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE_WITH_LED);
-
         App app = AppsSQLite.getInstance(NotificationListener.this).getApp(sbn.getPackageName());
 
         HashMap<String, Integer> params = new HashMap<String, Integer>();
-        params.put("color", app.getColor());
-        params.put("pause_time", app.getPauseTime());
+
+        params.put(NotificationConstants.KEY_COLOR_1, app.getColor());
+        params.put(NotificationConstants.KEY_PAUSE_TIME, app.getPauseTime());
+        params.put(NotificationConstants.KEY_ON_TIME, app.getOnTime());
+        params.put(NotificationConstants.KEY_TIMES, app.getNotificationTimes());
 
         MiBand.sendAction(MiBandWrapper.ACTION_NOTIFY, params);
 

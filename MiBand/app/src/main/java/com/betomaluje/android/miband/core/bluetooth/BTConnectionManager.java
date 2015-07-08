@@ -57,6 +57,14 @@ public class BTConnectionManager {
 
                 stopDiscovery();
 
+                if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
+                    //we update current band bluetooth MAC address
+                    SharedPreferences sharedPrefs = context.getSharedPreferences(UserInfo.KEY_PREFERENCES, Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPrefs.edit();
+                    editor.putString(UserInfo.KEY_BT_ADDRESS, device.getAddress());
+                    editor.commit();
+                }
+
                 device.connectGatt(context, false, btleGattCallback);
             }
         }
@@ -174,6 +182,9 @@ public class BTConnectionManager {
             }
         }
 
+        if (mDeviceAddress.equals(""))
+            mAlreadyPaired = false;
+
         if (mAlreadyPaired) {
             Log.i(TAG, "already paired!");
             BluetoothDevice mBluetoothMi = adapter.getRemoteDevice(mDeviceAddress);
@@ -232,12 +243,6 @@ public class BTConnectionManager {
 
                 //we set the Gatt instance
                 BTConnectionManager.this.gatt = gatt;
-
-                //we update current band bluetooth MAC address
-                SharedPreferences sharedPrefs = context.getSharedPreferences(UserInfo.KEY_PREFERENCES, Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = sharedPrefs.edit();
-                editor.putString(UserInfo.KEY_BT_ADDRESS, gatt.getDevice().getAddress());
-                editor.commit();
 
                 isConnected = true;
                 connectionCallback.onSuccess(isAlreadyPaired());

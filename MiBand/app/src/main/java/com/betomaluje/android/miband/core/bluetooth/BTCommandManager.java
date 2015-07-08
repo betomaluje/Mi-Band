@@ -8,6 +8,7 @@ import android.util.Log;
 import com.betomaluje.android.miband.core.ActionCallback;
 import com.betomaluje.android.miband.core.NotifyListener;
 import com.betomaluje.android.miband.core.model.Profile;
+import com.betomaluje.android.miband.core.model.Protocol;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -118,6 +119,10 @@ public class BTCommandManager {
         descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
         this.gatt.writeDescriptor(descriptor);
         this.notifyListeners.put(characteristicId, listener);
+    }
+
+    public void setHighLatency() {
+        writeCharacteristic(Profile.UUID_CHAR_LE_PARAMS, Protocol.HIGH_LATENCY_LEPARAMS, null);
     }
 
     public void onSuccess(Object data) {

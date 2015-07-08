@@ -17,8 +17,13 @@ public class NotificationConstants {
     public static final String MI_BAND_VIBRATE_WITH_LED = "com.betomaluje.android.miband.vibrate_with_led";
     public static final String MI_BAND_VIBRATE_UNTIL_CALL_STOP = "com.betomaluje.android.miband.vibrate_until_call_stop";
     public static final String MI_BAND_VIBRATE_WITHOUT_LED = "com.betomaluje.android.miband.vibrate_without";
+    public static final String MI_BAND_VIBRATE_CUSTOM = "com.betomaluje.android.miband.vibrate_custom";
     public static final String MI_BAND_BATTERY = "com.betomaluje.android.miband.battery";
 
     public static final String MI_BAND_NEW_NOTIFICATION = "com.betomaluje.android.miband.new_notification";
 
+    public static final String KEY_TIMES = "times";
+    public static final String KEY_COLOR_1 = "color";
+    public static final String KEY_PAUSE_TIME = "pause_time";
+    public static final String KEY_ON_TIME = "on_time";
 }

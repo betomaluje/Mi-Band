@@ -70,8 +70,10 @@ public class AppsSQLite {
 
         if (db.insert(TABLE_NAME, null, cv) != -1) {
             Log.e(TAG, "App " + source + " insertada con éxito!");
+            db.close();
             return true;
         } else {
+            db.close();
             return false;
         }
     }
@@ -91,14 +93,11 @@ public class AppsSQLite {
     }
 
     public boolean updateApp(App app) {
-        return updateApp(app.getSource(), app.getColor(), app.isNotify(), app.getPauseTime(), app.getStartTime(), app.getEndTime());
+        return updateApp(app.getSource(), app.getColor(), app.isNotify(), app.getPauseTime(),
+                app.getOnTime(), app.getNotificationTimes(), app.getStartTime(), app.getEndTime());
     }
 
-    public boolean updateApp(String source, int color, boolean shouldWeNotify, int pauseTime) {
-        return updateApp(source, color, shouldWeNotify, pauseTime, -1, -1);
-    }
-
-    public boolean updateApp(String source, int color, boolean shouldWeNotify, int pauseTime, int startTime, int endTime) {
+    public boolean updateApp(String source, int color, boolean shouldWeNotify, int pauseTime, int onTime, int notificationTime, int startTime, int endTime) {
         MasterSQLiteHelper helperDB = new MasterSQLiteHelper(context);
         SQLiteDatabase db = helperDB.getWritableDatabase();
 
@@ -106,13 +105,18 @@ public class AppsSQLite {
         cv.put("color", color);
         cv.put("notify", shouldWeNotify ? 1 : 0);
         cv.put("pause_time", pauseTime);
+        cv.put("on_time", Math.min(onTime, 500)); //maximum of 500 milliseconds
+        cv.put("notification_time", notificationTime);
         cv.put("start_time", startTime);
         cv.put("end_time", endTime);
 
         if (db.update(TABLE_NAME, cv, "source='" + source + "'", null) != -1) {
             Log.e(TAG, "App " + source + " actualizada con éxito!");
+
+            db.close();
             return true;
         } else {
+            db.close();
             return false;
         }
     }
@@ -159,15 +163,6 @@ public class AppsSQLite {
         cursor.close();
         db.close();
 
-        /*
-        Collections.sort(apps, new Comparator<App>() {
-            @Override
-            public int compare(App lhs, App rhs) {
-                return lhs.getName().compareTo(rhs.getName());
-            }
-        });
-        */
-
         return apps;
     }
 
@@ -178,8 +173,10 @@ public class AppsSQLite {
         app.setColor(cursor.getInt(3));
         app.setNotify(cursor.getInt(4));
         app.setPauseTime(cursor.getInt(5));
-        app.setStartTime(cursor.getInt(6));
-        app.setEndTime(cursor.getInt(7));
+        app.setOnTime(cursor.getInt(6));
+        app.setNotificationTimes(cursor.getInt(7));
+        app.setStartTime(cursor.getInt(8));
+        app.setEndTime(cursor.getInt(9));
         return app;
     }
 }

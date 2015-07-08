@@ -218,6 +218,9 @@ public class MainActivity extends AppCompatActivity {
                         disconnectMiBand();
                     break;
                 case R.id.btn_lights:
+
+                    //MiBand.sendAction(MiBandWrapper.ACTION_LIGHTS);
+
                     new ColorPickerDialog(MainActivity.this, 255, new ColorPickerDialog.OnColorSelectedListener() {
                         @Override
                         public void onColorSelected(int rgb) {
@@ -226,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
                             textView_status.setText("Playing with lights! Color: " + rgb);
 
                             HashMap<String, Integer> params = new HashMap<String, Integer>();
-                            params.put("color", rgb);
+                            params.put(NotificationConstants.KEY_COLOR_1, rgb);
 
                             MiBand.sendAction(MiBandWrapper.ACTION_LIGHTS, params);
                         }
@@ -242,8 +245,8 @@ public class MainActivity extends AppCompatActivity {
                             textView_status.setText("Playing with cool lights! Color: " + rgb);
 
                             HashMap<String, Integer> params = new HashMap<String, Integer>();
-                            params.put("color", rgb);
-                            params.put("pause_time", 500);
+                            params.put(NotificationConstants.KEY_COLOR_1, rgb);
+                            params.put(NotificationConstants.KEY_PAUSE_TIME, 500);
 
                             //MiBand.sendAction(MiBandWrapper.ACTION_LIGHTS, params);
                             MiBand.sendAction(MiBandWrapper.ACTION_NOTIFY, params);
@@ -257,7 +260,13 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case R.id.btn_vibrate:
                     textView_status.setText("Vibrating");
-                    MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE_WITH_LED);
+
+                    HashMap<String, Integer> params = new HashMap<String, Integer>();
+                    params.put(NotificationConstants.KEY_TIMES, 3);
+                    params.put(NotificationConstants.KEY_ON_TIME, 250);
+                    params.put(NotificationConstants.KEY_PAUSE_TIME, 250);
+
+                    MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE_CUSTOM, params);
                     break;
                 case R.id.btn_battery:
                     MiBand.sendAction(MiBandWrapper.ACTION_BATTERY);

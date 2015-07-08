@@ -22,9 +22,10 @@ public class MiBandWrapper {
     public static final int ACTION_VIBRATE_WITH_LED = 3;
     public static final int ACTION_VIBRATE_UNTIL_CALL_STOP = 4;
     public static final int ACTION_VIBRATE_WITHOUT_LED = 5;
-    public static final int ACTION_BATTERY = 6;
-    public static final int ACTION_REQUEST_CONNECTION = 7;
-    public static final int ACTION_NOTIFY = 8;
+    public static final int ACTION_VIBRATE_CUSTOM = 6;
+    public static final int ACTION_BATTERY = 7;
+    public static final int ACTION_REQUEST_CONNECTION = 8;
+    public static final int ACTION_NOTIFY = 9;
 
     private static MiBandWrapper instance;
 
@@ -85,6 +86,9 @@ public class MiBandWrapper {
                 break;
             case ACTION_VIBRATE_WITHOUT_LED:
                 sentAction = NotificationConstants.MI_BAND_VIBRATE_WITHOUT_LED;
+                break;
+            case ACTION_VIBRATE_CUSTOM:
+                sentAction = NotificationConstants.MI_BAND_VIBRATE_CUSTOM;
                 break;
             case ACTION_BATTERY:
                 sentAction = NotificationConstants.MI_BAND_BATTERY;

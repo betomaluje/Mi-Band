@@ -17,11 +17,13 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.betomaluje.android.miband.core.MiBand;
 import com.betomaluje.android.miband.core.bluetooth.MiBandWrapper;
+import com.betomaluje.android.miband.core.bluetooth.NotificationConstants;
 import com.betomaluje.android.miband.core.colorpicker.ColorPickerDialog;
 import com.betomaluje.android.miband.models.App;
 import com.betomaluje.android.miband.sqlite.AppsSQLite;
@@ -50,6 +52,7 @@ public class AppDetailActivity extends AppCompatActivity implements TimePickerDi
     private View view_notificationColor, cardView_step2, cardView_step3, linearLayout_times;
     private TextView textView_startTime, textView_endTime;
     private Button button_tryNotification;
+    private EditText editText_notificationTimes, editText_notificationOnDuration, editText_notificationPauseDuration;
 
     private boolean isStart;
 
@@ -96,11 +99,15 @@ public class AppDetailActivity extends AppCompatActivity implements TimePickerDi
         savedApp.setColor(selectedApp.getColor());
         savedApp.setStartTime(selectedApp.getStartTime());
         savedApp.setEndTime(selectedApp.getEndTime());
+        savedApp.setOnTime(selectedApp.getOnTime());
+        savedApp.setPauseTime(selectedApp.getPauseTime());
+        savedApp.setNotificationTimes(selectedApp.getNotificationTimes());
     }
 
     private void onExit() {
         selectedApp.setNotify(checkBox_notify.isChecked() ? 1 : 0);
 
+        //update the start and end time if needed
         if (!checkBox_times.isChecked()) {
             selectedApp.setStartTime(-1);
             selectedApp.setEndTime(-1);
@@ -110,6 +117,10 @@ public class AppDetailActivity extends AppCompatActivity implements TimePickerDi
             selectedApp.setStartTime(savedApp.getStartTime());
             selectedApp.setEndTime(savedApp.getEndTime());
         }
+
+        selectedApp.setNotificationTimes(Integer.parseInt(editText_notificationTimes.getText().toString()));
+        selectedApp.setOnTime(Integer.parseInt(editText_notificationOnDuration.getText().toString()));
+        selectedApp.setPauseTime(Integer.parseInt(editText_notificationPauseDuration.getText().toString()));
 
         if (somethingChanged()) {
             //display dialog to save changes
@@ -184,6 +195,16 @@ public class AppDetailActivity extends AppCompatActivity implements TimePickerDi
         if (savedApp.getStartTime() != selectedApp.getStartTime() || savedApp.getEndTime() != selectedApp.getEndTime())
             return true;
 
+        //if some of the times has changed
+        if (savedApp.getNotificationTimes() != selectedApp.getNotificationTimes())
+            return true;
+
+        if (savedApp.getOnTime() != selectedApp.getOnTime())
+            return true;
+
+        if (savedApp.getPauseTime() != selectedApp.getPauseTime())
+            return true;
+
         Log.v(TAG, "nothing changed");
         return false;
     }
@@ -240,8 +261,8 @@ public class AppDetailActivity extends AppCompatActivity implements TimePickerDi
                 selectedApp.setStartTime(savedApp.getStartTime());
                 selectedApp.setEndTime(savedApp.getEndTime());
 
-                textView_startTime.setText(selectedApp.getStartTime() != -1 ? "Start: " + String.valueOf(selectedApp.getStartTime()) : "Start Time");
-                textView_endTime.setText(selectedApp.getStartTime() != -1 ? "End: " + String.valueOf(selectedApp.getStartTime()) : "End Time");
+                textView_startTime.setText(selectedApp.getStartTime() != -1 ? "Start: " + String.valueOf(selectedApp.getStartTime()) + " hr" : "Start Time");
+                textView_endTime.setText(selectedApp.getEndTime() != -1 ? "End: " + String.valueOf(selectedApp.getEndTime()) + " hr" : "End Time");
             }
         });
 
@@ -252,8 +273,17 @@ public class AppDetailActivity extends AppCompatActivity implements TimePickerDi
         textView_startTime.setOnClickListener(clickListener);
         textView_endTime.setOnClickListener(clickListener);
 
-        textView_startTime.setText(selectedApp.getStartTime() != -1 ? "Start: " + String.valueOf(selectedApp.getStartTime()) : "Start Time");
-        textView_endTime.setText(selectedApp.getEndTime() != -1 ? "End: " + String.valueOf(selectedApp.getEndTime()) : "End Time");
+        textView_startTime.setText(selectedApp.getStartTime() != -1 ? "Start: " + String.valueOf(selectedApp.getStartTime()) + " hr" : "Start Time");
+        textView_endTime.setText(selectedApp.getEndTime() != -1 ? "End: " + String.valueOf(selectedApp.getEndTime()) + " hr" : "End Time");
+
+        //editText_notificationTimes, editText_notificationOnDuration, editText_notificationPauseDuration;
+        editText_notificationTimes = (EditText) findViewById(R.id.editText_notificationTimes);
+        editText_notificationOnDuration = (EditText) findViewById(R.id.editText_notificationOnDuration);
+        editText_notificationPauseDuration = (EditText) findViewById(R.id.editText_notificationPauseDuration);
+
+        editText_notificationTimes.setText(String.valueOf(selectedApp.getNotificationTimes()));
+        editText_notificationOnDuration.setText(String.valueOf(selectedApp.getOnTime()));
+        editText_notificationPauseDuration.setText(String.valueOf(selectedApp.getPauseTime()));
     }
 
     private void toggleViews(boolean isChecked) {
@@ -307,14 +337,22 @@ public class AppDetailActivity extends AppCompatActivity implements TimePickerDi
                 case R.id.button_tryNotification:
 
                     if (MiBand.getInstance(AppDetailActivity.this).isConnected()) {
+
+                        int times = Integer.parseInt(editText_notificationTimes.getText().toString());
+                        int pause = Integer.parseInt(editText_notificationPauseDuration.getText().toString());
+                        int on = Integer.parseInt(editText_notificationOnDuration.getText().toString());
+                        int color = selectedApp.getColor();
+
                         HashMap<String, Integer> params = new HashMap<String, Integer>();
-                        params.put("color", selectedApp.getColor());
-                        params.put("pause_time", selectedApp.getPauseTime());
+
+                        params.put(NotificationConstants.KEY_COLOR_1, color);
+                        params.put(NotificationConstants.KEY_PAUSE_TIME, pause);
+                        params.put(NotificationConstants.KEY_ON_TIME, on);
+                        params.put(NotificationConstants.KEY_TIMES, times);
 
                         MiBand.sendAction(MiBandWrapper.ACTION_NOTIFY, params);
                     } else {
-                        Snackbar.make(findViewById(R.id.coordinator), "Please pair the Mi Band first", Snackbar.LENGTH_SHORT)
-                                .show();
+                        Snackbar.make(findViewById(R.id.coordinator), "Please pair the Mi Band first", Snackbar.LENGTH_SHORT).show();
                     }
                     break;
             }

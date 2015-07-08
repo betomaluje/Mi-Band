@@ -1,5 +1,5 @@
 package com.betomaluje.android.miband.core.model;
 
 public enum LedColor {
-    RED, BLUE, ORANGE, GREEN,
+    RED, BLUE, ORANGE, GREEN, TEST,
 }

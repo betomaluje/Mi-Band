@@ -4,14 +4,17 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 
+import com.betomaluje.android.miband.core.bluetooth.BLEAction;
+import com.betomaluje.android.miband.core.bluetooth.BLETask;
 import com.betomaluje.android.miband.core.bluetooth.BTCommandManager;
 import com.betomaluje.android.miband.core.bluetooth.BTConnectionManager;
 import com.betomaluje.android.miband.core.bluetooth.MiBandWrapper;
 import com.betomaluje.android.miband.core.bluetooth.NotificationConstants;
+import com.betomaluje.android.miband.core.bluetooth.QueueConsumer;
+import com.betomaluje.android.miband.core.bluetooth.WaitAction;
+import com.betomaluje.android.miband.core.bluetooth.WriteAction;
 import com.betomaluje.android.miband.core.colorpicker.ColorPickerDialog;
 import com.betomaluje.android.miband.core.model.BatteryInfo;
 import com.betomaluje.android.miband.core.model.LedColor;
@@ -20,8 +23,10 @@ import com.betomaluje.android.miband.core.model.Protocol;
 import com.betomaluje.android.miband.core.model.UserInfo;
 import com.betomaluje.android.miband.core.model.VibrationMode;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 public class MiBand {
 
@@ -34,6 +39,7 @@ public class MiBand {
     private static MiBandWrapper miBandWrapper;
     private static Intent miBandService;
     private static BTConnectionManager btConnectionManager;
+    private static QueueConsumer mQueueConsumer;
 
     public synchronized static MiBand getInstance(Context context) {
         if (instance == null) {
@@ -57,20 +63,14 @@ public class MiBand {
                 //only once we are paired, we create the BluetoothIO object to communicate with Mi Band
                 io = new BTCommandManager(btConnectionManager.getGatt());
                 btConnectionManager.setIo(io);
+                mQueueConsumer = new QueueConsumer(MiBand.io);
+
+                Thread t = new Thread(mQueueConsumer);
+                t.start();
 
                 setUserInfo(UserInfo.getSavedUser(context));
                 if (connectionCallback != null)
                     connectionCallback.onSuccess(null);
-
-                /*
-                if (!(Boolean) data) {
-                    pair();
-                } else {
-                    setUserInfo(UserInfo.getSavedUser(context));
-                    if (connectionCallback != null)
-                        connectionCallback.onSuccess(null);
-                }
-                */
             }
 
             @Override
@@ -234,7 +234,47 @@ public class MiBand {
             default:
                 return;
         }
-        MiBand.io.writeCharacteristic(Profile.UUID_CHAR_CONTROL_POINT, protocal, null);
+        //MiBand.io.writeCharacteristic(Profile.UUID_CHAR_CONTROL_POINT, protocal, null);
+
+        final List<BLEAction> list = new ArrayList<>();
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, protocal));
+
+        final BLETask task = new BLETask(list);
+
+        try {
+            mQueueConsumer.add(task);
+        } catch (NullPointerException ignored) {
+
+        }
+
+    }
+
+    /**
+     * Vibrate "times" times. Each iteration will start vibrator "on_time" milliseconds (up to 500, will be truncated if larger), and then stop it "off_time" milliseconds (no limit here).
+     *
+     * @param times   : the amount of times to vibrate
+     * @param onTime  : the time in milliseconds that each vibration will last (maximum of 500 milliseconds). Preferably more than 100 milliseconds
+     * @param offTime : the time in milliseconds that each cycle will last
+     */
+    public synchronized void customVibration(final int times, final int onTime, final int offTime) {
+        final int newOnTime = Math.min(onTime, 500);
+
+        final List<BLEAction> list = new ArrayList<>();
+
+        for (int i = 1; i <= times; i++) {
+            list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.VIBRATION_WITHOUT_LED));
+            list.add(new WaitAction(newOnTime));
+            list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.STOP_VIBRATION));
+            list.add(new WaitAction(offTime));
+        }
+
+        final BLETask task = new BLETask(list);
+
+        try {
+            mQueueConsumer.add(task);
+        } catch (NullPointerException ignored) {
+
+        }
     }
 
     /**
@@ -243,7 +283,18 @@ public class MiBand {
     public void stopVibration() {
         checkConnection();
 
-        MiBand.io.writeCharacteristic(Profile.UUID_CHAR_CONTROL_POINT, Protocol.STOP_VIBRATION, null);
+        //MiBand.io.writeCharacteristic(Profile.UUID_CHAR_CONTROL_POINT, Protocol.STOP_VIBRATION, null);
+
+        final List<BLEAction> list = new ArrayList<>();
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.STOP_VIBRATION));
+
+        final BLETask task = new BLETask(list);
+
+        try {
+            mQueueConsumer.add(task);
+        } catch (NullPointerException ignored) {
+
+        }
     }
 
     public void setNormalNotifyListener(NotifyListener listener) {
@@ -278,7 +329,18 @@ public class MiBand {
     public void enableRealtimeStepsNotify() {
         checkConnection();
 
-        MiBand.io.writeCharacteristic(Profile.UUID_CHAR_CONTROL_POINT, Protocol.ENABLE_REALTIME_STEPS_NOTIFY, null);
+        //MiBand.io.writeCharacteristic(Profile.UUID_CHAR_CONTROL_POINT, Protocol.ENABLE_REALTIME_STEPS_NOTIFY, null);
+
+        final List<BLEAction> list = new ArrayList<>();
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.ENABLE_REALTIME_STEPS_NOTIFY));
+
+        final BLETask task = new BLETask(list);
+
+        try {
+            mQueueConsumer.add(task);
+        } catch (NullPointerException ignored) {
+
+        }
     }
 
     /**
@@ -287,7 +349,18 @@ public class MiBand {
     public void disableRealtimeStepsNotify() {
         checkConnection();
 
-        MiBand.io.writeCharacteristic(Profile.UUID_CHAR_CONTROL_POINT, Protocol.DISABLE_REALTIME_STEPS_NOTIFY, null);
+        //MiBand.io.writeCharacteristic(Profile.UUID_CHAR_CONTROL_POINT, Protocol.DISABLE_REALTIME_STEPS_NOTIFY, null);
+
+        final List<BLEAction> list = new ArrayList<>();
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.DISABLE_REALTIME_STEPS_NOTIFY));
+
+        final BLETask task = new BLETask(list);
+
+        try {
+            mQueueConsumer.add(task);
+        } catch (NullPointerException ignored) {
+
+        }
     }
 
     /**
@@ -319,6 +392,9 @@ public class MiBand {
                 break;
             case ORANGE:
                 protocal = Protocol.COLOR_ORANGE;
+                break;
+            case TEST:
+                protocal = Protocol.COLOR_TEST;
                 break;
             default:
                 return;
@@ -360,7 +436,18 @@ public class MiBand {
     private void setColor(byte[] color) {
         checkConnection();
 
-        MiBand.io.writeCharacteristic(Profile.UUID_CHAR_CONTROL_POINT, color, null);
+        final List<BLEAction> list = new ArrayList<>();
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, color));
+
+        final BLETask task = new BLETask(list);
+
+        try {
+            mQueueConsumer.add(task);
+        } catch (NullPointerException ignored) {
+
+        }
+
+        //MiBand.io.writeCharacteristic(Profile.UUID_CHAR_CONTROL_POINT, color, null);
     }
 
     private byte[] convertRgb(int rgb) {
@@ -372,45 +459,69 @@ public class MiBand {
         final int green = ((rgb >> 8) & 0x0ff) / 42;
         final int blue = ((rgb) & 0x0ff) / 42;
 
-        return new byte[]{(byte) red, (byte) green, (byte) blue, quickFlash ? (byte) 1 : (byte) 0};
+        return new byte[]{14, (byte) red, (byte) green, (byte) blue, quickFlash ? (byte) 1 : (byte) 0};
     }
 
     /**
      * Sends a custom notification to the Mi Band
      */
-    public synchronized void setLedColor(final int flashTimes, final int flashColour, final int originalColour, final long flashDuration) {
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                for (int i = 0; i < flashTimes; i++) {
-                    try {
-                        setLedColor(flashColour);
-                        Thread.sleep(flashDuration);
-                        setLedColor(originalColour, false);
-                        Thread.sleep(flashDuration);
-                    } catch (InterruptedException e) {
-                        Log.e(TAG, "error notification: " + e.getMessage());
-                    }
-                }
-            }
-        });
+    public synchronized void setLedColor(final int flashTimes, final int flashColour, final int flashDuration) {
+
+        final List<BLEAction> list = new ArrayList<>();
+
+        byte[] colors = convertRgb(flashColour);
+        byte[] protocalOff = {14, colors[0], colors[1], colors[2], 0};
+
+        for (int i = 1; i <= flashTimes; i++) {
+            list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, colors));
+            list.add(new WaitAction(flashDuration));
+            list.add((new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, protocalOff)));
+            list.add(new WaitAction(flashDuration));
+        }
+
+        BLETask task = new BLETask(list);
+
+        try {
+            mQueueConsumer.add(task);
+        } catch (NullPointerException e) {
+
+        }
     }
 
-    public synchronized void notifyBand(final int vibrateTimes, final int flashColour, final long pauseTime) {
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                for (int i = 0; i < vibrateTimes; i++) {
-                    try {
-                        startVibration(VibrationMode.VIBRATION_WITHOUT_LED);
-                        Thread.sleep(pauseTime);
-                        setLedColor(flashColour);
-                    } catch (InterruptedException e) {
-                        Log.e(TAG, "error notification: " + e.getMessage());
-                    }
-                }
-            }
-        });
+    /**
+     * Notifies the Mi Band with vibration and colour.<br/>
+     * Vibrate and flashes the colour "times" times. Each iteration will start "on_time" milliseconds (up to 500, will be truncated if larger), and then stop it "off_time" milliseconds (no limit here).
+     *
+     * @param times       : the amount of times to vibrate
+     * @param onTime      : the time in milliseconds that each vibration will last (maximum of 500 milliseconds). Preferably more than 100 milliseconds
+     * @param offTime     : the time in milliseconds that each cycle will last
+     * @param flashColour int value of the colour to flash
+     */
+    public synchronized void notifyBand(final int times, final int onTime, final int offTime, final int flashColour) {
+        final int newOnTime = Math.min(onTime, 500);
+
+        final List<BLEAction> list = new ArrayList<>();
+
+        byte[] colors = convertRgb(flashColour);
+
+        for (int i = 1; i <= times; i++) {
+            list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, colors));
+            list.add(new WaitAction(150));
+
+            //vibration part
+            list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.VIBRATION_WITHOUT_LED));
+            list.add(new WaitAction(newOnTime));
+            list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.STOP_VIBRATION));
+            list.add(new WaitAction(offTime));
+        }
+
+        final BLETask task = new BLETask(list);
+
+        try {
+            mQueueConsumer.add(task);
+        } catch (NullPointerException ignored) {
+
+        }
     }
 
     /**
@@ -427,12 +538,34 @@ public class MiBand {
             userInfo = UserInfo.getDefault(device.getAddress(), context);
         }
 
-        MiBand.io.writeCharacteristic(Profile.UUID_CHAR_USER_INFO, userInfo.getData(), null);
+        final List<BLEAction> list = new ArrayList<>();
+        list.add(new WriteAction(Profile.UUID_CHAR_USER_INFO, userInfo.getData()));
+
+        final BLETask task = new BLETask(list);
+
+        try {
+            mQueueConsumer.add(task);
+        } catch (NullPointerException ignored) {
+
+        }
+
+        //MiBand.io.writeCharacteristic(Profile.UUID_CHAR_USER_INFO, userInfo.getData(), null);
     }
 
     public void setUserInfo(int gender, int age, int height, int weight, String alias) {
         UserInfo user = UserInfo.create(btConnectionManager.getDevice().getAddress(), gender, age, height, weight, alias, 0);
-        MiBand.io.writeCharacteristic(Profile.UUID_CHAR_USER_INFO, user.getData(), null);
+        //MiBand.io.writeCharacteristic(Profile.UUID_CHAR_USER_INFO, user.getData(), null);
+
+        final List<BLEAction> list = new ArrayList<>();
+        list.add(new WriteAction(Profile.UUID_CHAR_USER_INFO, user.getData()));
+
+        final BLETask task = new BLETask(list);
+
+        try {
+            mQueueConsumer.add(task);
+        } catch (NullPointerException ignored) {
+
+        }
     }
 
     /**
@@ -444,7 +577,18 @@ public class MiBand {
     public void selfTest() {
         checkConnection();
 
-        MiBand.io.writeCharacteristic(Profile.UUID_CHAR_TEST, Protocol.SELF_TEST, null);
+        //MiBand.io.writeCharacteristic(Profile.UUID_CHAR_TEST, Protocol.SELF_TEST, null);
+
+        final List<BLEAction> list = new ArrayList<>();
+        list.add(new WriteAction(Profile.UUID_CHAR_TEST, Protocol.SELF_TEST));
+
+        final BLETask task = new BLETask(list);
+
+        try {
+            mQueueConsumer.add(task);
+        } catch (NullPointerException ignored) {
+
+        }
     }
 
 

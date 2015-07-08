@@ -18,6 +18,8 @@ public class App implements Parcelable {
     private int color;
     private boolean notify = false;
     private int pauseTime = 500;
+    private int onTime = 500;
+    private int notificationTimes = 3;
 
     private int startTime = -1;
     private int endTime = -1;
@@ -84,6 +86,22 @@ public class App implements Parcelable {
         this.pauseTime = pauseTime;
     }
 
+    public int getOnTime() {
+        return onTime;
+    }
+
+    public void setOnTime(int onTime) {
+        this.onTime = onTime;
+    }
+
+    public int getNotificationTimes() {
+        return notificationTimes;
+    }
+
+    public void setNotificationTimes(int notificationTimes) {
+        this.notificationTimes = notificationTimes;
+    }
+
     public int getStartTime() {
         return startTime;
     }
@@ -135,6 +153,8 @@ public class App implements Parcelable {
         color = in.readInt();
         notify = in.readByte() != 0x00;
         pauseTime = in.readInt();
+        onTime = in.readInt();
+        notificationTimes = in.readInt();
         startTime = in.readInt();
         endTime = in.readInt();
         red = in.readInt();
@@ -154,6 +174,8 @@ public class App implements Parcelable {
         dest.writeInt(color);
         dest.writeByte((byte) (notify ? 0x01 : 0x00));
         dest.writeInt(pauseTime);
+        dest.writeInt(onTime);
+        dest.writeInt(notificationTimes);
         dest.writeInt(startTime);
         dest.writeInt(endTime);
         dest.writeInt(red);
