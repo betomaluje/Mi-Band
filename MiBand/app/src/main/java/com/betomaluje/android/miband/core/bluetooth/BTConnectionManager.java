@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -15,9 +16,13 @@ import android.util.Log;
 
 import com.betomaluje.android.miband.MiBandApplication;
 import com.betomaluje.android.miband.core.ActionCallback;
+import com.betomaluje.android.miband.core.model.Profile;
 import com.betomaluje.android.miband.core.model.UserInfo;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Created by betomaluje on 6/26/15.
@@ -125,6 +130,36 @@ public class BTConnectionManager {
         }
     }
 
+    private void enableNotifications(boolean enable) {
+        HashMap<UUID, BluetoothGattCharacteristic> mAvailableCharacteristics = null;
+
+        for (BluetoothGattService service : gatt.getServices()) {
+            if (Profile.UUID_SERVICE_MILI.equals(service.getUuid())) {
+                List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
+                if (characteristics == null || characteristics.isEmpty()) {
+                    Log.e(TAG, "Supported LE service " + service.getUuid() + "did not return any characteristics");
+                    continue;
+                }
+                mAvailableCharacteristics = new HashMap<>(characteristics.size());
+                for (BluetoothGattCharacteristic characteristic : characteristics) {
+                    mAvailableCharacteristics.put(characteristic.getUuid(), characteristic);
+                }
+            }
+        }
+
+        try {
+            if (mAvailableCharacteristics != null && !mAvailableCharacteristics.isEmpty()) {
+                gatt.setCharacteristicNotification(mAvailableCharacteristics.get(Profile.UUID_CHAR_NOTIFICATION), enable);
+                gatt.setCharacteristicNotification(mAvailableCharacteristics.get(Profile.UUID_CHAR_REALTIME_STEPS), enable);
+                gatt.setCharacteristicNotification(mAvailableCharacteristics.get(Profile.UUID_CHAR_ACTIVITY_DATA), enable);
+                gatt.setCharacteristicNotification(mAvailableCharacteristics.get(Profile.UUID_CHAR_BATTERY), enable);
+                gatt.setCharacteristicNotification(mAvailableCharacteristics.get(Profile.UUID_CHAR_SENSOR_DATA), enable);
+            }
+        } catch (NullPointerException e) {
+
+        }
+    }
+
     public void disconnect() {
         if (gatt != null) {
             gatt.close();
@@ -227,8 +262,9 @@ public class BTConnectionManager {
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 gatt.discoverServices();
-            } else {
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTING || newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.e(TAG, "onConnectionStateChange disconnect: " + newState);
+                enableNotifications(false);
                 disconnect();
             }
         }
@@ -245,6 +281,7 @@ public class BTConnectionManager {
                 BTConnectionManager.this.gatt = gatt;
 
                 isConnected = true;
+                enableNotifications(true);
                 connectionCallback.onSuccess(isAlreadyPaired());
             } else {
                 disconnect();
@@ -265,8 +302,17 @@ public class BTConnectionManager {
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
+
+            Log.i(TAG, "handleControlPoint got status:" + status);
+
             if (BluetoothGatt.GATT_SUCCESS == status) {
                 io.onSuccess(characteristic);
+
+                if (characteristic.getUuid().equals(Profile.UUID_CHAR_CONTROL_POINT)) {
+                    io.handleControlPointResult(characteristic.getValue());
+                }
+
+
             } else {
                 io.onFail(status, "onCharacteristicWrite fail");
             }
@@ -287,6 +333,11 @@ public class BTConnectionManager {
             super.onCharacteristicChanged(gatt, characteristic);
             if (io.notifyListeners.containsKey(characteristic.getUuid())) {
                 io.notifyListeners.get(characteristic.getUuid()).onNotify(characteristic.getValue());
+            }
+
+            UUID characteristicUUID = characteristic.getUuid();
+            if (Profile.UUID_CHAR_ACTIVITY_DATA.equals(characteristicUUID)) {
+                io.handleActivityNotif(characteristic.getValue());
             }
         }
     };

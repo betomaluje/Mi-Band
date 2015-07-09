@@ -12,7 +12,6 @@ import com.betomaluje.android.miband.core.bluetooth.BTCommandManager;
 import com.betomaluje.android.miband.core.bluetooth.BTConnectionManager;
 import com.betomaluje.android.miband.core.bluetooth.MiBandWrapper;
 import com.betomaluje.android.miband.core.bluetooth.NotificationConstants;
-import com.betomaluje.android.miband.core.bluetooth.QueueConsumer;
 import com.betomaluje.android.miband.core.bluetooth.WaitAction;
 import com.betomaluje.android.miband.core.bluetooth.WriteAction;
 import com.betomaluje.android.miband.core.colorpicker.ColorPickerDialog;
@@ -39,7 +38,7 @@ public class MiBand {
     private static MiBandWrapper miBandWrapper;
     private static Intent miBandService;
     private static BTConnectionManager btConnectionManager;
-    private static QueueConsumer mQueueConsumer;
+
 
     public synchronized static MiBand getInstance(Context context) {
         if (instance == null) {
@@ -61,12 +60,8 @@ public class MiBand {
                 Log.d(TAG, "Connection success, now pair: " + data);
 
                 //only once we are paired, we create the BluetoothIO object to communicate with Mi Band
-                io = new BTCommandManager(btConnectionManager.getGatt());
+                io = new BTCommandManager(context, btConnectionManager.getGatt());
                 btConnectionManager.setIo(io);
-                mQueueConsumer = new QueueConsumer(MiBand.io);
-
-                Thread t = new Thread(mQueueConsumer);
-                t.start();
 
                 setUserInfo(UserInfo.getSavedUser(context));
                 if (connectionCallback != null)
@@ -193,7 +188,6 @@ public class MiBand {
         checkConnection();
 
         ActionCallback ioCallback = new ActionCallback() {
-
             @Override
             public void onSuccess(Object data) {
                 BluetoothGattCharacteristic characteristic = (BluetoothGattCharacteristic) data;
@@ -242,7 +236,7 @@ public class MiBand {
         final BLETask task = new BLETask(list);
 
         try {
-            mQueueConsumer.add(task);
+            io.queueTask(task);
         } catch (NullPointerException ignored) {
 
         }
@@ -271,7 +265,7 @@ public class MiBand {
         final BLETask task = new BLETask(list);
 
         try {
-            mQueueConsumer.add(task);
+            io.queueTask(task);
         } catch (NullPointerException ignored) {
 
         }
@@ -291,7 +285,7 @@ public class MiBand {
         final BLETask task = new BLETask(list);
 
         try {
-            mQueueConsumer.add(task);
+            io.queueTask(task);
         } catch (NullPointerException ignored) {
 
         }
@@ -337,7 +331,7 @@ public class MiBand {
         final BLETask task = new BLETask(list);
 
         try {
-            mQueueConsumer.add(task);
+            io.queueTask(task);
         } catch (NullPointerException ignored) {
 
         }
@@ -357,7 +351,7 @@ public class MiBand {
         final BLETask task = new BLETask(list);
 
         try {
-            mQueueConsumer.add(task);
+            io.queueTask(task);
         } catch (NullPointerException ignored) {
 
         }
@@ -422,10 +416,7 @@ public class MiBand {
      */
     public void setLedColor(int rgb, boolean quickFlash) {
         byte[] colors = convertRgb(rgb, quickFlash);
-
-        byte[] protocal = {14, colors[0], colors[1], colors[2], colors[3]};
-
-        setColor(protocal);
+        setColor(colors);
     }
 
     /**
@@ -442,7 +433,7 @@ public class MiBand {
         final BLETask task = new BLETask(list);
 
         try {
-            mQueueConsumer.add(task);
+            io.queueTask(task);
         } catch (NullPointerException ignored) {
 
         }
@@ -482,7 +473,7 @@ public class MiBand {
         BLETask task = new BLETask(list);
 
         try {
-            mQueueConsumer.add(task);
+            io.queueTask(task);
         } catch (NullPointerException e) {
 
         }
@@ -498,27 +489,30 @@ public class MiBand {
      * @param flashColour int value of the colour to flash
      */
     public synchronized void notifyBand(final int times, final int onTime, final int offTime, final int flashColour) {
-        final int newOnTime = Math.min(onTime, 500);
+        //final int newOnTime = Math.min(onTime, 500);
 
         final List<BLEAction> list = new ArrayList<>();
 
         byte[] colors = convertRgb(flashColour);
 
-        for (int i = 1; i <= times; i++) {
-            list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, colors));
-            list.add(new WaitAction(150));
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.VIBRATION_WITHOUT_LED));
+        list.add(new WaitAction(200));
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, colors));
 
+        /*
+        for (int i = 1; i <= times; i++) {
             //vibration part
             list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.VIBRATION_WITHOUT_LED));
-            list.add(new WaitAction(newOnTime));
-            list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.STOP_VIBRATION));
+            //list.add(new WaitAction(newOnTime));
+            //list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.STOP_VIBRATION));
             list.add(new WaitAction(offTime));
         }
+        */
 
         final BLETask task = new BLETask(list);
 
         try {
-            mQueueConsumer.add(task);
+            io.queueTask(task);
         } catch (NullPointerException ignored) {
 
         }
@@ -544,7 +538,7 @@ public class MiBand {
         final BLETask task = new BLETask(list);
 
         try {
-            mQueueConsumer.add(task);
+            io.queueTask(task);
         } catch (NullPointerException ignored) {
 
         }
@@ -562,7 +556,7 @@ public class MiBand {
         final BLETask task = new BLETask(list);
 
         try {
-            mQueueConsumer.add(task);
+            io.queueTask(task);
         } catch (NullPointerException ignored) {
 
         }
@@ -585,11 +579,22 @@ public class MiBand {
         final BLETask task = new BLETask(list);
 
         try {
-            mQueueConsumer.add(task);
+            io.queueTask(task);
         } catch (NullPointerException ignored) {
 
         }
     }
 
+    public void fetchData() {
+        final List<BLEAction> list = new ArrayList<>();
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.FETCH_DATA));
 
+        final BLETask task = new BLETask(list);
+
+        try {
+            io.queueTask(task);
+        } catch (NullPointerException ignored) {
+
+        }
+    }
 }

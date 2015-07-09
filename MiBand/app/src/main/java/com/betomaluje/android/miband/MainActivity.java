@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
 
     private int BT_REQUEST_CODE = 1001;
 
-    private Button btn_connect, btn_lights, btn_lights_2, btn_notification, btn_vibrate, btn_battery, btn_water, btn_water_cancel, btn_apps;
+    private Button btn_connect, btn_lights, btn_lights_2, btn_notification, btn_vibrate, btn_battery, btn_water, btn_water_cancel, btn_apps, btn_sync;
     private TextView textView_status;
 
     private boolean isConnected = false;
@@ -106,7 +106,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-
         setSupportActionBar(toolbar);
 
         Intent alarmIntent = new Intent(this, WaterReceiver.class);
@@ -164,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
             btn_water = (Button) findViewById(R.id.btn_water);
             btn_water_cancel = (Button) findViewById(R.id.btn_water_cancel);
             btn_apps = (Button) findViewById(R.id.btn_apps);
+            btn_sync = (Button) findViewById(R.id.btn_sync);
 
             textView_status = (TextView) findViewById(R.id.textView_status);
 
@@ -176,6 +176,7 @@ public class MainActivity extends AppCompatActivity {
             btn_water.setOnClickListener(btnListener);
             btn_water_cancel.setOnClickListener(btnListener);
             btn_apps.setOnClickListener(btnListener);
+            btn_sync.setOnClickListener(btnListener);
         }
     }
 
@@ -218,9 +219,6 @@ public class MainActivity extends AppCompatActivity {
                         disconnectMiBand();
                     break;
                 case R.id.btn_lights:
-
-                    //MiBand.sendAction(MiBandWrapper.ACTION_LIGHTS);
-
                     new ColorPickerDialog(MainActivity.this, 255, new ColorPickerDialog.OnColorSelectedListener() {
                         @Override
                         public void onColorSelected(int rgb) {
@@ -229,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
                             textView_status.setText("Playing with lights! Color: " + rgb);
 
                             HashMap<String, Integer> params = new HashMap<String, Integer>();
-                            params.put(NotificationConstants.KEY_COLOR_1, rgb);
+                            params.put(NotificationConstants.KEY_COLOR, rgb);
 
                             MiBand.sendAction(MiBandWrapper.ACTION_LIGHTS, params);
                         }
@@ -245,14 +243,13 @@ public class MainActivity extends AppCompatActivity {
                             textView_status.setText("Playing with cool lights! Color: " + rgb);
 
                             HashMap<String, Integer> params = new HashMap<String, Integer>();
-                            params.put(NotificationConstants.KEY_COLOR_1, rgb);
+                            params.put(NotificationConstants.KEY_COLOR, rgb);
                             params.put(NotificationConstants.KEY_PAUSE_TIME, 500);
 
                             //MiBand.sendAction(MiBandWrapper.ACTION_LIGHTS, params);
                             MiBand.sendAction(MiBandWrapper.ACTION_NOTIFY, params);
                         }
                     }).show();
-
 
                     break;
                 case R.id.btn_notification:
@@ -282,6 +279,9 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case R.id.btn_apps:
                     thumbNailScaleAnimation(v);
+                    break;
+                case R.id.btn_sync:
+                    MiBand.sendAction(MiBandWrapper.ACTION_SYNC);
                     break;
             }
         }
@@ -368,6 +368,7 @@ public class MainActivity extends AppCompatActivity {
         btn_notification.setEnabled(true);
         btn_vibrate.setEnabled(true);
         btn_battery.setEnabled(true);
+        btn_sync.setEnabled(true);
     }
 
     private void stopMiBand() {
@@ -382,6 +383,7 @@ public class MainActivity extends AppCompatActivity {
         btn_notification.setEnabled(false);
         btn_vibrate.setEnabled(false);
         btn_battery.setEnabled(false);
+        btn_sync.setEnabled(false);
 
         isConnected = false;
     }

@@ -37,12 +37,9 @@ public class MiBandService extends Service {
                     connectMiBand();
                     break;
                 case NotificationConstants.MI_BAND_LIGHTS:
+                    if (b.containsKey(NotificationConstants.KEY_COLOR)) {
 
-                    //miBand.setLedColor(LedColor.TEST);
-
-                    if (b.containsKey(NotificationConstants.KEY_COLOR_1)) {
-
-                        int color = b.getInt(NotificationConstants.KEY_COLOR_1, 255);
+                        int color = b.getInt(NotificationConstants.KEY_COLOR, 255);
 
                         if (b.containsKey(NotificationConstants.KEY_TIMES)) {
                             //with flashing
@@ -54,7 +51,6 @@ public class MiBandService extends Service {
                             //normal flashing
                             miBand.setLedColor(color);
                         }
-
                     }
                     break;
                 case NotificationConstants.MI_BAND_VIBRATE_WITH_LED:
@@ -82,10 +78,10 @@ public class MiBandService extends Service {
 
                     break;
                 case NotificationConstants.MI_BAND_NEW_NOTIFICATION:
-                    //if (b.containsKey(NotificationConstants.KEY_COLOR_1) && b.containsKey(NotificationConstants.KEY_PAUSE_TIME)) {
+                    //if (b.containsKey(NotificationConstants.KEY_COLOR) && b.containsKey(NotificationConstants.KEY_PAUSE_TIME)) {
 
                     int vibrate_times = b.getInt(NotificationConstants.KEY_TIMES, 3);
-                    int color = b.getInt(NotificationConstants.KEY_COLOR_1, 255);
+                    int color = b.getInt(NotificationConstants.KEY_COLOR, 255);
                     int flash_time = b.getInt(NotificationConstants.KEY_ON_TIME, 250);
                     int pause_time = b.getInt(NotificationConstants.KEY_PAUSE_TIME, 500);
 
@@ -109,6 +105,9 @@ public class MiBandService extends Service {
                             Log.e(TAG, "Fail battery: " + msg);
                         }
                     });
+                    break;
+                case NotificationConstants.MI_BAND_SYNC:
+                    miBand.fetchData();
                     break;
                 case NotificationConstants.MI_BAND_REQUEST_CONNECTION:
                     broadcastUpdate(NotificationConstants.MI_BAND_REQUEST_CONNECTION, miBand != null && miBand.isConnected());

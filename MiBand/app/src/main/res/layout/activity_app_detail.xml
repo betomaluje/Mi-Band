@@ -128,7 +128,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:paddingBottom="8dp"
-                        android:paddingTop="8dp">
+                        android:paddingTop="8dp"
+                        android:visibility="gone">
 
                         <TextView
                             android:layout_width="match_parent"
@@ -151,12 +152,12 @@
 
                     </RelativeLayout>
 
-
                     <RelativeLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:paddingBottom="8dp"
-                        android:paddingTop="8dp">
+                        android:paddingTop="8dp"
+                        android:visibility="gone">
 
                         <TextView
                             android:layout_width="match_parent"
@@ -183,7 +184,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:paddingBottom="8dp"
-                        android:paddingTop="8dp">
+                        android:paddingTop="8dp"
+                        android:visibility="gone">
 
                         <TextView
                             android:layout_width="match_parent"

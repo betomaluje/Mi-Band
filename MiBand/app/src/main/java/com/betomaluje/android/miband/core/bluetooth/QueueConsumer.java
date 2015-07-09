@@ -11,11 +11,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class QueueConsumer implements Runnable {
     private String TAG = this.getClass().getSimpleName();
 
-    private BTCommandManager bleCommunicationManager;
+    private BTCommandManager bleCommandManager;
     private final LinkedBlockingQueue<BLETask> queue;
 
-    public QueueConsumer(final BTCommandManager bleCommunicationManager) {
-        this.bleCommunicationManager = bleCommunicationManager;
+    public QueueConsumer(final BTCommandManager bleCommandManager) {
+        this.bleCommandManager = bleCommandManager;
         this.queue = new LinkedBlockingQueue<>();
     }
 
@@ -37,15 +37,15 @@ public class QueueConsumer implements Runnable {
                     } else if (action instanceof WriteAction) {
 
                         WriteAction writeAction = (WriteAction) action;
-
-                        bleCommunicationManager.writeCharacteristic(writeAction.getCharacteristic(), writeAction.getPayload(), writeAction.getCallback());
+                        bleCommandManager.writeCharacteristic(writeAction.getCharacteristic(), writeAction.getPayload(), writeAction.getCallback());
                     }
                 }
             } catch (Exception e) {
                 Log.w(TAG, e.toString());
-            } finally {
+            }
+            finally {
                 if (queue.isEmpty()) {
-                    bleCommunicationManager.setHighLatency();
+                    bleCommandManager.setHighLatency();
                 }
             }
         }

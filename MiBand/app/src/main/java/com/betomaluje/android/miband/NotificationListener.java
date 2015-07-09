@@ -114,7 +114,7 @@ public class NotificationListener extends NotificationListenerService {
 
         HashMap<String, Integer> params = new HashMap<String, Integer>();
 
-        params.put(NotificationConstants.KEY_COLOR_1, app.getColor());
+        params.put(NotificationConstants.KEY_COLOR, app.getColor());
         params.put(NotificationConstants.KEY_PAUSE_TIME, app.getPauseTime());
         params.put(NotificationConstants.KEY_ON_TIME, app.getOnTime());
         params.put(NotificationConstants.KEY_TIMES, app.getNotificationTimes());

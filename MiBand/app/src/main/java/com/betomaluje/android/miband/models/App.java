@@ -121,11 +121,11 @@ public class App implements Parcelable {
     public boolean shouldWeNotify() {
         //if the time doesn't matter
 
-        Log.i("App", "startTime: " + startTime + " endTime: " + endTime);
+        //Log.i("App", "startTime: " + startTime + " endTime: " + endTime);
 
         if (startTime == -1 || endTime == -1) {
 
-            Log.i("App", "not setted: " + isNotify());
+            //Log.i("App", "not setted: " + isNotify());
 
             return isNotify();
         } else {
@@ -140,7 +140,7 @@ public class App implements Parcelable {
             Calendar now = Calendar.getInstance();
             now.setTimeInMillis(System.currentTimeMillis());
 
-            Log.i("App", "setted: " + isNotify() + " && " + now.after(mStartPeriod) + " && " + now.before(mEndPeriod));
+            //Log.i("App", "setted: " + isNotify() + " && " + now.after(mStartPeriod) + " && " + now.before(mEndPeriod));
 
             //only if we are in between the time
             return isNotify() && now.after(mStartPeriod) && now.before(mEndPeriod);

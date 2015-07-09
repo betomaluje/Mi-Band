@@ -69,7 +69,7 @@ public class AppsSQLite {
         cv.put("end_time", endTime);
 
         if (db.insert(TABLE_NAME, null, cv) != -1) {
-            Log.e(TAG, "App " + source + " insertada con éxito!");
+            //Log.e(TAG, "App " + source + " insertada con éxito!");
             db.close();
             return true;
         } else {
@@ -83,7 +83,7 @@ public class AppsSQLite {
         MasterSQLiteHelper helperDB = new MasterSQLiteHelper(context);
         SQLiteDatabase db = helperDB.getReadableDatabase();
         if (db.delete(TABLE_NAME, "source='" + source + "'", null) > 0) {
-            Log.e(TAG, "App " + source + " eliminada");
+            //Log.e(TAG, "App " + source + " eliminada");
             db.close();
             return true;
         } else {
@@ -111,7 +111,7 @@ public class AppsSQLite {
         cv.put("end_time", endTime);
 
         if (db.update(TABLE_NAME, cv, "source='" + source + "'", null) != -1) {
-            Log.e(TAG, "App " + source + " actualizada con éxito!");
+            //Log.e(TAG, "App " + source + " actualizada con éxito!");
 
             db.close();
             return true;
@@ -168,15 +168,15 @@ public class AppsSQLite {
 
     private App cursorToApp(Cursor cursor) {
         App app = new App();
-        app.setName(cursor.getString(1));
-        app.setSource(cursor.getString(2));
-        app.setColor(cursor.getInt(3));
-        app.setNotify(cursor.getInt(4));
-        app.setPauseTime(cursor.getInt(5));
-        app.setOnTime(cursor.getInt(6));
-        app.setNotificationTimes(cursor.getInt(7));
-        app.setStartTime(cursor.getInt(8));
-        app.setEndTime(cursor.getInt(9));
+        app.setName(cursor.getString(0));
+        app.setSource(cursor.getString(1));
+        app.setColor(cursor.getInt(2));
+        app.setNotify(cursor.getInt(3));
+        app.setPauseTime(cursor.getInt(4));
+        app.setOnTime(cursor.getInt(5));
+        app.setNotificationTimes(cursor.getInt(6));
+        app.setStartTime(cursor.getInt(7));
+        app.setEndTime(cursor.getInt(8));
         return app;
     }
 }

@@ -345,7 +345,7 @@ public class AppDetailActivity extends AppCompatActivity implements TimePickerDi
 
                         HashMap<String, Integer> params = new HashMap<String, Integer>();
 
-                        params.put(NotificationConstants.KEY_COLOR_1, color);
+                        params.put(NotificationConstants.KEY_COLOR, color);
                         params.put(NotificationConstants.KEY_PAUSE_TIME, pause);
                         params.put(NotificationConstants.KEY_ON_TIME, on);
                         params.put(NotificationConstants.KEY_TIMES, times);
