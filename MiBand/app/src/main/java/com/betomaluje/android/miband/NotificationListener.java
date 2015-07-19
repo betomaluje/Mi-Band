@@ -20,14 +20,13 @@ import com.betomaluje.android.miband.core.bluetooth.NotificationConstants;
 import com.betomaluje.android.miband.models.App;
 import com.betomaluje.android.miband.sqlite.AppsSQLite;
 
-import java.util.HashMap;
-
 /**
  * Created by betomaluje on 6/30/15.
  */
 public class NotificationListener extends NotificationListenerService {
 
     private final String TAG = getClass().getSimpleName();
+    private MiBand miBand;
 
     private BroadcastReceiver miBandReceiver = new BroadcastReceiver() {
         @Override
@@ -61,11 +60,13 @@ public class NotificationListener extends NotificationListenerService {
 
         if (!shouldWeNotify(sbn)) return;
 
+        Log.i(TAG, "Processing notification from source " + sbn.getPackageName());
+
         /*
         We get the MiBand instance. If we are connected, we handle the status bar notification and send the info to the Mi Band.
         If we are not connected, we connect and wait for the success callback. Then we handle the status bar notification
          */
-        MiBand miBand = MiBand.getInstance(NotificationListener.this);
+        miBand = MiBand.getInstance(NotificationListener.this);
 
         Log.i(TAG, "miBand connected: " + miBand.isConnected());
 
@@ -112,14 +113,35 @@ public class NotificationListener extends NotificationListenerService {
         //only if we have a valid notification, we need to post it to Mi Band Service
         App app = AppsSQLite.getInstance(NotificationListener.this).getApp(sbn.getPackageName());
 
-        HashMap<String, Integer> params = new HashMap<String, Integer>();
+        miBand.notifyBand(app.getColor());
 
-        params.put(NotificationConstants.KEY_COLOR, app.getColor());
-        params.put(NotificationConstants.KEY_PAUSE_TIME, app.getPauseTime());
-        params.put(NotificationConstants.KEY_ON_TIME, app.getOnTime());
-        params.put(NotificationConstants.KEY_TIMES, app.getNotificationTimes());
+        /*
+        //HashMap<String, Integer> params = new HashMap<String, Integer>();
 
-        MiBand.sendAction(MiBandWrapper.ACTION_NOTIFY, params);
+        //params.put(NotificationConstants.KEY_COLOR, app.getColor());
+
+        //MiBand.sendAction(MiBandWrapper.ACTION_NOTIFY, params);
+
+        int vibrate_times = -1;
+        int flash_time = -1;
+        int pause_time = -1;
+
+        if (b.containsKey(NotificationConstants.KEY_TIMES))
+            vibrate_times = b.getInt(NotificationConstants.KEY_TIMES, 3);
+
+        if (b.containsKey(NotificationConstants.KEY_ON_TIME))
+            flash_time = b.getInt(NotificationConstants.KEY_ON_TIME, 250);
+
+        if (b.containsKey(NotificationConstants.KEY_PAUSE_TIME))
+            pause_time = b.getInt(NotificationConstants.KEY_PAUSE_TIME, 500);
+
+        int color = b.getInt(NotificationConstants.KEY_COLOR, 255);
+
+        if (vibrate_times == -1 || flash_time == -1 || pause_time == -1)
+            miBand.notifyBand(color);
+        else
+            miBand.notifyBand(vibrate_times, flash_time, pause_time, color);
+        */
 
         MiBandWrapper.getInstance(NotificationListener.this).sendAction(MiBandWrapper.ACTION_REQUEST_CONNECTION);
     }
@@ -127,8 +149,6 @@ public class NotificationListener extends NotificationListenerService {
     private boolean shouldWeNotify(StatusBarNotification sbn) {
         String source = sbn.getPackageName();
         Notification notification = sbn.getNotification();
-
-        Log.i(TAG, "Processing notification from source " + source);
 
         if ((notification.flags & Notification.FLAG_ONGOING_EVENT) == Notification.FLAG_ONGOING_EVENT) {
             return false;

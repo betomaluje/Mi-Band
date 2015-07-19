@@ -1,5 +1,7 @@
 package com.betomaluje.android.miband.core;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -7,9 +9,13 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import com.betomaluje.android.miband.R;
+import com.betomaluje.android.miband.activities.MainActivity;
 import com.betomaluje.android.miband.core.bluetooth.NotificationConstants;
 import com.betomaluje.android.miband.core.model.BatteryInfo;
 import com.betomaluje.android.miband.core.model.VibrationMode;
@@ -19,6 +25,7 @@ import com.betomaluje.android.miband.core.model.VibrationMode;
  */
 public class MiBandService extends Service {
     private final String TAG = MiBandService.class.getSimpleName();
+    public static final int ONGOING_NOTIFICATION_ID = 2121;
 
     public MiBand miBand;
 
@@ -79,13 +86,25 @@ public class MiBandService extends Service {
                     break;
                 case NotificationConstants.MI_BAND_NEW_NOTIFICATION:
                     //if (b.containsKey(NotificationConstants.KEY_COLOR) && b.containsKey(NotificationConstants.KEY_PAUSE_TIME)) {
+                    int vibrate_times = -1;
+                    int flash_time = -1;
+                    int pause_time = -1;
 
-                    int vibrate_times = b.getInt(NotificationConstants.KEY_TIMES, 3);
+                    if (b.containsKey(NotificationConstants.KEY_TIMES))
+                        vibrate_times = b.getInt(NotificationConstants.KEY_TIMES, 3);
+
+                    if (b.containsKey(NotificationConstants.KEY_ON_TIME))
+                        flash_time = b.getInt(NotificationConstants.KEY_ON_TIME, 250);
+
+                    if (b.containsKey(NotificationConstants.KEY_PAUSE_TIME))
+                        pause_time = b.getInt(NotificationConstants.KEY_PAUSE_TIME, 500);
+
                     int color = b.getInt(NotificationConstants.KEY_COLOR, 255);
-                    int flash_time = b.getInt(NotificationConstants.KEY_ON_TIME, 250);
-                    int pause_time = b.getInt(NotificationConstants.KEY_PAUSE_TIME, 500);
 
-                    miBand.notifyBand(vibrate_times, flash_time, pause_time, color);
+                    if (vibrate_times == -1 || flash_time == -1 || pause_time == -1)
+                        miBand.notifyBand(color);
+                    else
+                        miBand.notifyBand(vibrate_times, flash_time, pause_time, color);
                     //}
 
                     break;
@@ -106,9 +125,12 @@ public class MiBandService extends Service {
                         }
                     });
                     break;
-                case NotificationConstants.MI_BAND_SYNC:
-                    miBand.fetchData();
+                case NotificationConstants.MI_BAND_START_SYNC:
+                    miBand.startListeningSync();
                     break;
+                case NotificationConstants.MI_BAND_STOP_SYNC:
+                    if (miBand.isSyncNotification())
+                        miBand.stopListeningSync();
                 case NotificationConstants.MI_BAND_REQUEST_CONNECTION:
                     broadcastUpdate(NotificationConstants.MI_BAND_REQUEST_CONNECTION, miBand != null && miBand.isConnected());
                     break;
@@ -129,11 +151,15 @@ public class MiBandService extends Service {
 
         Log.d(TAG, "Destroying MiBandService");
 
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(miBandReceiver);
+        LocalBroadcastManager.getInstance(MiBandService.this).unregisterReceiver(miBandReceiver);
 
-        MiBand.disconnect();
+        MiBand.dispose();
         broadcastUpdate(NotificationConstants.MI_BAND_DISCONNECT);
         broadcastUpdate("CANCEL_WATER");
+
+        //cancel notification
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.cancel(ONGOING_NOTIFICATION_ID);
     }
 
     @Override
@@ -156,9 +182,43 @@ public class MiBandService extends Service {
             return START_NOT_STICKY;
         }
 
+        createOngoingNotification();
+
         connectMiBand();
 
         return START_STICKY;
+    }
+
+    private void createOngoingNotification() {
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(MiBandService.this)
+                        .setSmallIcon(R.drawable.notification_template_icon_bg)
+                        .setContentTitle("Mi Band Service")
+                        .setOngoing(true)
+                        .setContentText("Click to close");
+        // Creates an explicit intent for an Activity in your app
+        Intent resultIntent = new Intent(MiBandService.this, MainActivity.class);
+
+        resultIntent.putExtra("service", true);
+
+        // The stack builder object will contain an artificial back stack for the
+        // started Activity.
+        // This ensures that navigating backward from the Activity leads out of
+        // your application to the Home screen.
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(MiBandService.this);
+        // Adds the back stack for the Intent (but not the Intent itself)
+        stackBuilder.addParentStack(MainActivity.class);
+        // Adds the Intent that starts the Activity to the top of the stack
+        stackBuilder.addNextIntent(resultIntent);
+        PendingIntent resultPendingIntent =
+                stackBuilder.getPendingIntent(
+                        0,
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                );
+        mBuilder.setContentIntent(resultPendingIntent);
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        // mId allows you to update the notification later on.
+        mNotificationManager.notify(ONGOING_NOTIFICATION_ID, mBuilder.build());
     }
 
     private void connectMiBand() {
@@ -184,6 +244,7 @@ public class MiBandService extends Service {
             Log.d(TAG, "Connection failed: " + msg);
 
             broadcastUpdate(NotificationConstants.MI_BAND_DISCONNECT, errorCode);
+            //miBand.connect(connectionAction);
         }
     };
 

@@ -9,6 +9,7 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 
+import com.betomaluje.android.miband.activities.MainActivity;
 import com.betomaluje.android.miband.core.MiBand;
 import com.betomaluje.android.miband.core.bluetooth.MiBandWrapper;
 

@@ -1,4 +1,4 @@
-package com.betomaluje.android.miband;
+package com.betomaluje.android.miband.activities;
 
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -7,10 +7,9 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.CollapsingToolbarLayout;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -21,6 +20,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.betomaluje.android.miband.R;
 import com.betomaluje.android.miband.core.MiBand;
 import com.betomaluje.android.miband.core.bluetooth.MiBandWrapper;
 import com.betomaluje.android.miband.core.bluetooth.NotificationConstants;
@@ -36,7 +36,7 @@ import java.util.HashMap;
 /**
  * Created by betomaluje on 7/6/15.
  */
-public class AppDetailActivity extends AppCompatActivity implements TimePickerDialog.OnTimeSetListener {
+public class AppDetailActivity extends BaseActivity implements TimePickerDialog.OnTimeSetListener {
 
     private final String TAG = getClass().getSimpleName();
 
@@ -57,15 +57,24 @@ public class AppDetailActivity extends AppCompatActivity implements TimePickerDi
     private boolean isStart;
 
     @Override
+    protected int getLayoutResource() {
+        return R.layout.activity_app_detail;
+    }
+
+    @Override
+    protected void setActionBarIcon(int iconRes) {
+        super.setActionBarIcon(iconRes);
+    }
+
+    @Override
+    protected boolean getDisplayHomeAsUpEnabled() {
+        return true;
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_app_detail);
-
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        toolbar.setBackgroundColor(Color.TRANSPARENT);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        getToolbar().setBackgroundColor(Color.TRANSPARENT);
 
         selectedApp = getIntent().getExtras().getParcelable(extra);
         position = getIntent().getExtras().getInt(extra_position, 0);
@@ -134,17 +143,7 @@ public class AppDetailActivity extends AppCompatActivity implements TimePickerDi
                     .setCancelable(false)
                     .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
-                            AppsSQLite.getInstance(AppDetailActivity.this).updateApp(selectedApp);
-
-                            Intent intent = getIntent();
-                            Bundle b = new Bundle();
-
-                            b.putParcelable(extra_returned, selectedApp);
-                            b.putInt(extra_position, position);
-                            intent.putExtras(b);
-
-                            setResult(RESULT_OK, intent);
-                            finish();
+                            saveChanges();
                         }
                     })
                     .setNegativeButton("No", new DialogInterface.OnClickListener() {
@@ -166,6 +165,12 @@ public class AppDetailActivity extends AppCompatActivity implements TimePickerDi
     public void onBackPressed() {
         //super.onBackPressed();
         onExit();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        resetToolbar();
     }
 
     @Override
@@ -205,11 +210,57 @@ public class AppDetailActivity extends AppCompatActivity implements TimePickerDi
         if (savedApp.getPauseTime() != selectedApp.getPauseTime())
             return true;
 
-        Log.v(TAG, "nothing changed");
+        //Log.v(TAG, "nothing changed");
         return false;
     }
 
+    private void saveChanges() {
+        //Log.v(TAG, "saving changes!");
+
+        AppsSQLite.getInstance(AppDetailActivity.this).updateApp(selectedApp);
+
+        Intent intent = getIntent();
+        Bundle b = new Bundle();
+
+        b.putParcelable(extra_returned, selectedApp);
+        b.putInt(extra_position, position);
+        intent.putExtras(b);
+
+        setResult(RESULT_OK, intent);
+
+        finish();
+    }
+
     private void initViews() {
+        FloatingActionButton fab_save = (FloatingActionButton) findViewById(R.id.fab_save);
+        fab_save.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectedApp.setNotify(checkBox_notify.isChecked() ? 1 : 0);
+
+                //update the start and end time if needed
+                if (!checkBox_times.isChecked()) {
+                    selectedApp.setStartTime(-1);
+                    selectedApp.setEndTime(-1);
+                } else if ((selectedApp.getStartTime() == -1 && selectedApp.getEndTime() != -1) ||
+                        (selectedApp.getStartTime() != -1 && selectedApp.getEndTime() == -1)) {
+                    //if we are missing one time, we reset times
+                    selectedApp.setStartTime(savedApp.getStartTime());
+                    selectedApp.setEndTime(savedApp.getEndTime());
+                }
+
+                selectedApp.setNotificationTimes(Integer.parseInt(editText_notificationTimes.getText().toString()));
+                selectedApp.setOnTime(Integer.parseInt(editText_notificationOnDuration.getText().toString()));
+                selectedApp.setPauseTime(Integer.parseInt(editText_notificationPauseDuration.getText().toString()));
+
+                if (somethingChanged()) {
+                    saveChanges();
+                } else {
+                    Snackbar.make(findViewById(R.id.coordinator), "You haven't made any changes", Snackbar.LENGTH_SHORT).show();
+                }
+            }
+        });
+
         button_tryNotification = (Button) findViewById(R.id.button_tryNotification);
         button_tryNotification.setOnClickListener(clickListener);
 
@@ -352,7 +403,7 @@ public class AppDetailActivity extends AppCompatActivity implements TimePickerDi
 
                         MiBand.sendAction(MiBandWrapper.ACTION_NOTIFY, params);
                     } else {
-                        Snackbar.make(findViewById(R.id.coordinator), "Please pair the Mi Band first", Snackbar.LENGTH_SHORT).show();
+                        Snackbar.make(findViewById(R.id.coordinator), "Please connect the Mi Band first", Snackbar.LENGTH_SHORT).show();
                     }
                     break;
             }

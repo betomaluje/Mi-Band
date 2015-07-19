@@ -10,7 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.betomaluje.android.miband.MainActivity;
+import com.betomaluje.android.miband.activities.MainActivity;
 import com.betomaluje.android.miband.R;
 import com.betomaluje.android.miband.core.model.UserInfo;
 

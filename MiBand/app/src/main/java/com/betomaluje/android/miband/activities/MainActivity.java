@@ -1,4 +1,4 @@
-package com.betomaluje.android.miband;
+package com.betomaluje.android.miband.activities;
 
 import android.app.ActivityManager;
 import android.app.AlarmManager;
@@ -19,8 +19,6 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -29,6 +27,9 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.betomaluje.android.miband.R;
+import com.betomaluje.android.miband.WaterReceiver;
+import com.betomaluje.android.miband.WaterScheduler;
 import com.betomaluje.android.miband.core.MiBand;
 import com.betomaluje.android.miband.core.MiBandService;
 import com.betomaluje.android.miband.core.bluetooth.MiBandWrapper;
@@ -39,13 +40,13 @@ import com.betomaluje.android.miband.wizard.UserWizardActivity;
 
 import java.util.HashMap;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
 
     private final String TAG = getClass().getSimpleName();
 
     private int BT_REQUEST_CODE = 1001;
 
-    private Button btn_connect, btn_lights, btn_lights_2, btn_notification, btn_vibrate, btn_battery, btn_water, btn_water_cancel, btn_apps, btn_sync;
+    private Button btn_connect, btn_lights, btn_lights_2, btn_notification, btn_vibrate, btn_battery, btn_water, btn_water_cancel, btn_apps, btn_sync, btn_chart, btn_chart_2;
     private TextView textView_status;
 
     private boolean isConnected = false;
@@ -101,13 +102,23 @@ public class MainActivity extends AppCompatActivity {
     };
 
     @Override
+    protected int getLayoutResource() {
+        return R.layout.activity_main;
+    }
+
+    @Override
+    protected void setActionBarIcon(int iconRes) {
+        super.setActionBarIcon(iconRes);
+    }
+
+    @Override
+    protected boolean getDisplayHomeAsUpEnabled() {
+        return false;
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
         Intent alarmIntent = new Intent(this, WaterReceiver.class);
         pendingIntent = PendingIntent.getBroadcast(this, 0, alarmIntent, 0);
 
@@ -125,10 +136,8 @@ public class MainActivity extends AppCompatActivity {
                 AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
                         MainActivity.this);
 
-                // set title
                 alertDialogBuilder.setTitle("Need Permission");
 
-                // set dialog message
                 alertDialogBuilder
                         .setMessage("In order to notify you of any new notification, we need to configure the settings in your phone. Would yo like to go now?")
                         .setCancelable(false)
@@ -141,8 +150,6 @@ public class MainActivity extends AppCompatActivity {
                         })
                         .setNegativeButton("No", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
-                                // if this button is clicked, just close
-                                // the dialog box and do nothing
                                 dialog.cancel();
                             }
                         });
@@ -164,6 +171,8 @@ public class MainActivity extends AppCompatActivity {
             btn_water_cancel = (Button) findViewById(R.id.btn_water_cancel);
             btn_apps = (Button) findViewById(R.id.btn_apps);
             btn_sync = (Button) findViewById(R.id.btn_sync);
+            btn_chart = (Button) findViewById(R.id.btn_chart);
+            btn_chart_2 = (Button) findViewById(R.id.btn_chart_2);
 
             textView_status = (TextView) findViewById(R.id.textView_status);
 
@@ -177,6 +186,19 @@ public class MainActivity extends AppCompatActivity {
             btn_water_cancel.setOnClickListener(btnListener);
             btn_apps.setOnClickListener(btnListener);
             btn_sync.setOnClickListener(btnListener);
+            btn_chart.setOnClickListener(btnListener);
+            btn_chart_2.setOnClickListener(btnListener);
+
+            Bundle b = getIntent().getExtras();
+            if (b != null) {
+                if (b.getBoolean("service", false)) {
+                    stopService(new Intent(MainActivity.this, MiBandService.class));
+                } else {
+                    connectToMiBand();
+                }
+            } else {
+                connectToMiBand();
+            }
         }
     }
 
@@ -189,6 +211,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        //resetToolbar();
+
         //we are listening from the mi band service
         LocalBroadcastManager.getInstance(MainActivity.this).registerReceiver(bluetoothStatusReceiver, new IntentFilter(NotificationConstants.ACTION_MIBAND_SERVICE));
 
@@ -206,6 +230,12 @@ public class MainActivity extends AppCompatActivity {
         } else {
             stopMiBand();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        MiBand.sendAction(MiBandWrapper.ACTION_STOP_SYNC);
     }
 
     private View.OnClickListener btnListener = new View.OnClickListener() {
@@ -246,7 +276,6 @@ public class MainActivity extends AppCompatActivity {
                             params.put(NotificationConstants.KEY_COLOR, rgb);
                             params.put(NotificationConstants.KEY_PAUSE_TIME, 500);
 
-                            //MiBand.sendAction(MiBandWrapper.ACTION_LIGHTS, params);
                             MiBand.sendAction(MiBandWrapper.ACTION_NOTIFY, params);
                         }
                     }).show();
@@ -281,7 +310,13 @@ public class MainActivity extends AppCompatActivity {
                     thumbNailScaleAnimation(v);
                     break;
                 case R.id.btn_sync:
-                    MiBand.sendAction(MiBandWrapper.ACTION_SYNC);
+                    MiBand.sendAction(MiBandWrapper.ACTION_START_SYNC);
+                    break;
+                case R.id.btn_chart:
+                    startActivity(new Intent(MainActivity.this, SleepChartActivity.class));
+                    break;
+                case R.id.btn_chart_2:
+                    startActivity(new Intent(MainActivity.this, ActivitiesChartActivity.class));
                     break;
             }
         }
@@ -365,10 +400,12 @@ public class MainActivity extends AppCompatActivity {
 
         btn_lights.setEnabled(true);
         btn_lights_2.setEnabled(true);
-        btn_notification.setEnabled(true);
+        //btn_notification.setEnabled(true);
         btn_vibrate.setEnabled(true);
         btn_battery.setEnabled(true);
         btn_sync.setEnabled(true);
+        btn_chart.setEnabled(true);
+        btn_chart_2.setEnabled(true);
     }
 
     private void stopMiBand() {
@@ -380,10 +417,12 @@ public class MainActivity extends AppCompatActivity {
 
         btn_lights.setEnabled(false);
         btn_lights_2.setEnabled(false);
-        btn_notification.setEnabled(false);
+        //btn_notification.setEnabled(false);
         btn_vibrate.setEnabled(false);
         btn_battery.setEnabled(false);
         btn_sync.setEnabled(false);
+        btn_chart.setEnabled(false);
+        btn_chart_2.setEnabled(false);
 
         isConnected = false;
     }

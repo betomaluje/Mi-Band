@@ -114,6 +114,12 @@ public class MiBand {
         btConnectionManager.disconnect();
     }
 
+    public static void dispose() {
+        Log.e(TAG, "Disposing Mi Band...");
+        MiBand.context.stopService(miBandService);
+        btConnectionManager.dispose();
+    }
+
     private void checkConnection() {
         if (!isConnected()) {
             Log.e(TAG, "Not connected... Waiting for new connection...");
@@ -479,6 +485,25 @@ public class MiBand {
         }
     }
 
+    public synchronized void notifyBand(final int flashColour) {
+        final List<BLEAction> list = new ArrayList<>();
+
+        byte[] colors = convertRgb(flashColour);
+
+        list.add(new WaitAction(150));
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.VIBRATION_WITHOUT_LED));
+        list.add(new WaitAction(300));
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, colors));
+
+        final BLETask task = new BLETask(list);
+
+        try {
+            io.queueTask(task);
+        } catch (NullPointerException ignored) {
+
+        }
+    }
+
     /**
      * Notifies the Mi Band with vibration and colour.<br/>
      * Vibrate and flashes the colour "times" times. Each iteration will start "on_time" milliseconds (up to 500, will be truncated if larger), and then stop it "off_time" milliseconds (no limit here).
@@ -496,7 +521,7 @@ public class MiBand {
         byte[] colors = convertRgb(flashColour);
 
         list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.VIBRATION_WITHOUT_LED));
-        list.add(new WaitAction(200));
+        list.add(new WaitAction(250));
         list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, colors));
 
         /*
@@ -585,7 +610,8 @@ public class MiBand {
         }
     }
 
-    public void fetchData() {
+    public void startListeningSync() {
+        btConnectionManager.toggleNotifications(true);
         final List<BLEAction> list = new ArrayList<>();
         list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.FETCH_DATA));
 
@@ -596,5 +622,13 @@ public class MiBand {
         } catch (NullPointerException ignored) {
 
         }
+    }
+
+    public void stopListeningSync() {
+        btConnectionManager.toggleNotifications(false);
+    }
+
+    public boolean isSyncNotification() {
+        return btConnectionManager.isSyncNotification();
     }
 }

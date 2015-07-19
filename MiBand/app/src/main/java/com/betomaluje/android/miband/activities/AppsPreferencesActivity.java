@@ -1,18 +1,17 @@
-package com.betomaluje.android.miband;
+package com.betomaluje.android.miband.activities;
 
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.ActivityOptionsCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
 
+import com.betomaluje.android.miband.R;
 import com.betomaluje.android.miband.adapters.ApplicationsAdapter;
 import com.betomaluje.android.miband.models.App;
 import com.betomaluje.android.miband.sqlite.AppsSQLite;
@@ -23,7 +22,7 @@ import java.util.List;
 /**
  * Created by betomaluje on 7/6/15.
  */
-public class AppsPreferencesActivity extends AppCompatActivity {
+public class AppsPreferencesActivity extends BaseActivity {
 
     private final String TAG = getClass().getSimpleName();
 
@@ -36,14 +35,23 @@ public class AppsPreferencesActivity extends AppCompatActivity {
     private ApplicationsAdapter adapter;
 
     @Override
+    protected int getLayoutResource() {
+        return R.layout.activity_apps;
+    }
+
+    @Override
+    protected void setActionBarIcon(int iconRes) {
+        super.setActionBarIcon(iconRes);
+    }
+
+    @Override
+    protected boolean getDisplayHomeAsUpEnabled() {
+        return true;
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_apps);
-
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setDisplayShowHomeEnabled(true);
 
         if (!AppsSQLite.getInstance(AppsPreferencesActivity.this).doesTableExists()) {
             fillApps();
@@ -87,23 +95,16 @@ public class AppsPreferencesActivity extends AppCompatActivity {
     }
 
     private void thumbNailScaleAnimation(View view, App app, int position) {
-        view.setDrawingCacheEnabled(true);
-        view.setPressed(false);
-        view.refreshDrawableState();
-        Bitmap bitmap = view.getDrawingCache();
-        ActivityOptionsCompat opts = ActivityOptionsCompat.makeThumbnailScaleUpAnimation(
-                view, bitmap, 0, 0);
-        // Request the activity be started, using the custom animation options.
+        ActivityOptionsCompat options =
+                ActivityOptionsCompat.makeSceneTransitionAnimation(
+                        AppsPreferencesActivity.this, view, AppDetailActivity.extra);
         Intent intent = new Intent(AppsPreferencesActivity.this, AppDetailActivity.class);
         Bundle b = new Bundle();
         b.putParcelable(AppDetailActivity.extra, app);
         b.putInt(AppDetailActivity.extra_position, position);
 
         intent.putExtras(b);
-
-        startActivityForResult(intent, APP_DETAIL_CODE, opts.toBundle());
-
-        view.setDrawingCacheEnabled(false);
+        ActivityCompat.startActivityForResult(AppsPreferencesActivity.this, intent, APP_DETAIL_CODE, options.toBundle());
     }
 
     @Override
@@ -127,6 +128,8 @@ public class AppsPreferencesActivity extends AppCompatActivity {
                     adapter.notifyDataSetChanged();
                 }
             }
+
+            Snackbar.make(findViewById(R.id.coordinator), "Changes saved!", Snackbar.LENGTH_LONG).show();
         }
     }
 }

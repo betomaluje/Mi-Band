@@ -67,13 +67,6 @@
                 android:text="Cool Lights" />
 
             <Button
-                android:id="@+id/btn_notification"
-                android:layout_width="120dp"
-                android:layout_height="wrap_content"
-                android:enabled="false"
-                android:text="Test Notification" />
-
-            <Button
                 android:id="@+id/btn_vibrate"
                 android:layout_width="120dp"
                 android:layout_height="wrap_content"
@@ -93,6 +86,26 @@
                 android:layout_height="wrap_content"
                 android:enabled="false"
                 android:text="Sync Data" />
+
+            <Button
+                android:id="@+id/btn_chart"
+                android:layout_width="120dp"
+                android:layout_height="wrap_content"
+                android:enabled="false"
+                android:text="Sleep Chart" />
+
+            <Button
+                android:id="@+id/btn_chart_2"
+                android:layout_width="120dp"
+                android:layout_height="wrap_content"
+                android:enabled="false"
+                android:text="Activity Chart" />
+
+            <Button
+                android:id="@+id/btn_notification"
+                android:layout_width="120dp"
+                android:layout_height="wrap_content"
+                android:text="Test Notification" />
 
             <Button
                 android:id="@+id/btn_water"

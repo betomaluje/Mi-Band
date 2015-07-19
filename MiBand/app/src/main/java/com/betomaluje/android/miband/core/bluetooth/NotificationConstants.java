@@ -19,7 +19,8 @@ public class NotificationConstants {
     public static final String MI_BAND_VIBRATE_WITHOUT_LED = "com.betomaluje.android.miband.vibrate_without";
     public static final String MI_BAND_VIBRATE_CUSTOM = "com.betomaluje.android.miband.vibrate_custom";
     public static final String MI_BAND_BATTERY = "com.betomaluje.android.miband.battery";
-    public static final String MI_BAND_SYNC = "com.betomaluje.android.miband.sync";
+    public static final String MI_BAND_START_SYNC = "com.betomaluje.android.miband.start_sync";
+    public static final String MI_BAND_STOP_SYNC = "com.betomaluje.android.miband.stop_sync";
 
     public static final String MI_BAND_NEW_NOTIFICATION = "com.betomaluje.android.miband.new_notification";
 

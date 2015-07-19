@@ -38,6 +38,7 @@ public class BTConnectionManager {
     private boolean mFound = false;
     private boolean mAlreadyPaired = false;
     private boolean isConnected = false;
+    private boolean isSyncNotification = false;
 
     private Handler mHandler = new Handler(Looper.getMainLooper());
     private BluetoothAdapter adapter;
@@ -130,7 +131,9 @@ public class BTConnectionManager {
         }
     }
 
-    private void enableNotifications(boolean enable) {
+    public void toggleNotifications(boolean enable) {
+        if (gatt == null) return;
+
         HashMap<UUID, BluetoothGattCharacteristic> mAvailableCharacteristics = null;
 
         for (BluetoothGattService service : gatt.getServices()) {
@@ -149,6 +152,9 @@ public class BTConnectionManager {
 
         try {
             if (mAvailableCharacteristics != null && !mAvailableCharacteristics.isEmpty()) {
+
+                isSyncNotification = enable;
+
                 gatt.setCharacteristicNotification(mAvailableCharacteristics.get(Profile.UUID_CHAR_NOTIFICATION), enable);
                 gatt.setCharacteristicNotification(mAvailableCharacteristics.get(Profile.UUID_CHAR_REALTIME_STEPS), enable);
                 gatt.setCharacteristicNotification(mAvailableCharacteristics.get(Profile.UUID_CHAR_ACTIVITY_DATA), enable);
@@ -161,6 +167,16 @@ public class BTConnectionManager {
     }
 
     public void disconnect() {
+        if (gatt != null) {
+            gatt.disconnect();
+        }
+
+        isConnected = false;
+
+        connectionCallback.onFail(-1, "disconnected");
+    }
+
+    public void dispose(){
         if (gatt != null) {
             gatt.close();
             gatt = null;
@@ -238,6 +254,10 @@ public class BTConnectionManager {
         return isConnected && adapter.isEnabled();
     }
 
+    public boolean isSyncNotification() {
+        return isSyncNotification;
+    }
+
     public BluetoothDevice getDevice() {
         return gatt.getDevice();
     }
@@ -264,8 +284,8 @@ public class BTConnectionManager {
                 gatt.discoverServices();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTING || newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.e(TAG, "onConnectionStateChange disconnect: " + newState);
-                enableNotifications(false);
-                disconnect();
+                //toggleNotifications(false);
+                //disconnect();
             }
         }
 
@@ -281,10 +301,10 @@ public class BTConnectionManager {
                 BTConnectionManager.this.gatt = gatt;
 
                 isConnected = true;
-                enableNotifications(true);
+                //toggleNotifications(true);
                 connectionCallback.onSuccess(isAlreadyPaired());
             } else {
-                disconnect();
+                //disconnect();
             }
         }
 
@@ -339,6 +359,8 @@ public class BTConnectionManager {
             if (Profile.UUID_CHAR_ACTIVITY_DATA.equals(characteristicUUID)) {
                 io.handleActivityNotif(characteristic.getValue());
             }
+
+            toggleNotifications(false);
         }
     };
 
