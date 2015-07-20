@@ -1,94 +1,283 @@
-# Mi Band
-Sweet and simple Android implementation for the Xiaomi Mi Band.
+#Mi Band
+Sweet and simple Android implementation to control some aspects of your Xiaomi Mi Band.
 
-It's based on [pangliang's implementation](https://github.com/pangliang/miband-sdk-android) but changed some things.
+* Connect and Disconnect
+* Start vibration (with pre defined and customs values)
+* Change led's colors (with pre defined and customs values)
+* Get battery info
+* Sync with your Mi Band (steps, slept hours, etc)
+* Real time step counter
 
-## Usage
-1. Register a `BroadcastReceiver` to listen to Mi Band actions
+##Known issues
+###First time connection
+The first time you connect with your Mi Band please be patient. It takes around 45 seconds. After this time, if you can't connect to it, try the following
 
-        private BroadcastReceiver bluetoothStatusReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                Bundle b = intent.getExtras();
-                String action = b.getString("type");
+1. Try disconnecting and again connecting to Bluetooth
+2. Uninstall and install again your app
 
-                if (action.equals(NotificationConstants.MI_BAND_CONNECT)) {
-                    // Mi Band connected, we could enable different buttons
-                } else if (action.equals(NotificationConstants.MI_BAND_DISCONNECT)) {
-                    // Mi Band disconnected
+###Mi Fit app incompatibility
+If you also have the Mi Fit app installed, you may lose some information on the syncing because Mi Fit and your app will be "fighting" to sync the Mi Band data. Once the Mi Band data is synced, it will be "deleted" from the band and lost forever. 
 
-                    //we get an extra int showing the error code
-                    int errorCode = b.getInt("errorCode");
+Also the pairing process may ocurr several times each time you switch from apps because you will lose th pairing info from each app.
 
-                    if (errorCode == NotificationConstants.BLUETOOTH_OFF) {
-                        //Bluetooth is off. We start a new activity for result to turn it on.
-                        //BT_REQUEST_CODE is just an int to listen in onActivityResult callback
-                        Log.d(TAG, "turn on Bluetooth");
-                        startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), BT_REQUEST_CODE, null);
-                    } else {
-                        //Mi Band was disconnected. We could enable again the connect button or something
-                        //disableConnectButton();
-                    }
-                } else if (action.equals(NotificationConstants.MI_BAND_BATTERY)) {
-                    //we get the battery information from Mi Band
-                    BatteryInfo batteryInfo = b.getParcelable("battery");
-                    textView_status.setText(batteryInfo.toString());
+Nevertheless you can still send commands to the Mi Band if you are using both apps. It's not mandatory to uninstall Mi Fit to use this library.
+
+##Usage
+You can use this library in activities, fragments an even services!
+As an alternative you can use the pre defined [MiBandService](https://github.com/betomaluje/Mi-Band/wiki/MiBandService)
+
+1. Define your Mi Band variable (globaly or localy, it doesn't matter because it's a Singleton) and pass it the current Context variable:
+
+        MiBand miBand = MiBand.getInstance(MyActivity.this);
+        
+2. Now, to toggle connection you can use
+
+        if (!miBand.isConnected()) {
+            miBand.connect(new ActionCallback() {
+                @Override
+                public void onSuccess(Object data) {
+                    Log.d(TAG, "Connected with Mi Band!");
+                    //show SnackBar/Toast or something
                 }
+
+                @Override
+                public void onFail(int errorCode, String msg) {
+                    Log.d(TAG, "Connection failed: " + msg);
+                }
+            });
+        } else {
+            miBand.disconnect();
+        }
+
+##Actions
+Now the fun part: sending commands to your band.
+
+###Vibration
+For vibration you can use the following methods:
+
+        //to vibrate using the default band color
+        miBand.startVibration(VibrationMode.VIBRATION_WITH_LED);
+        
+        //to vibrate until you manually stop it
+        miBand.startVibration(VibrationMode.VIBRATION_UNTIL_CALL_STOP);
+        
+        //to vibrate without the led
+        miBand.startVibration(VibrationMode.VIBRATION_WITHOUT_LED);
+        
+        //to stop vibration
+        miBand.stopVibration();
+        
+Also there's a custom vibration method
+
+        miBand.customVibration(times, on_time, off_time);
+        
+where `times` is an int value to determine **how many times** will vibrate(I recommend to use between 1-3 times only)
+and `on_time` is the time in milliseconds that each vibration will be **On** (not more than 500 milliseconds)
+and `off_time` is the **pause** between each consecutive vibration
+        
+###LED Color
+To change the LED color, you can use
+
+        miBand.setLedColor(color);
+
+where `color` is an int value representing the color youg want
+
+For convenience, there's a `ColorPickerDialog` class to help choose the int value of a color
+
+        new ColorPickerDialog(MyActivity.this, 255, new ColorPickerDialog.OnColorSelectedListener() {
+            @Override
+            public void onColorSelected(int rgb) {
+                Log.i(TAG, "selected color: " + rgb);
+                miBand.setLedColor(rgb);
             }
-        };
+        }).show();
+        
+or you can use 
 
-2. In `onPause` and `onResume` you should register this `BroadcastReceiver`
+        miBand.setLedColor(flash_time, color, pause_time);
 
-        @Override
-        protected void onPause() {
-            super.onPause();
-            LocalBroadcastManager.getInstance(MainActivity.this).unregisterReceiver(bluetoothStatusReceiver);
+where `flash_time` is an int value to determine **how many times** will the led flash (I recommend using 1-3 values only)
+and `color` is the int **value of the color**
+and `pause_time` is the **pause** in milliseconds between each flash
+
+###Battery Info
+To get the battery information just use
+
+        miBand.getBatteryInfo(new ActionCallback() {
+            @Override
+            public void onSuccess(final Object data) {
+                BatteryInfo battery = (BatteryInfo) data;
+                //get the cycle count, the level and other information
+                Log.e(TAG, "Battery: " + battery.toString());
+            }
+
+            @Override
+            public void onFail(int errorCode, String msg) {
+                Log.e(TAG, "Fail battery: " + msg);
+            }
+        });
+        
+###Syncronization
+To sync data with yor Mi Band use
+
+        miBand.startListeningSync();
+        
+this will start the sync process. Also you can 
+
+        if (miBand.isSyncNotification())
+            miBand.stopListeningSync();
+            
+After you are finished syncing with the band, you can access the information using
+
+        Calendar before = Calendar.getInstance();
+        //7 days before
+        before.add(Calendar.DAY_OF_WEEK, -7);
+        long temp = before.getTimeInMillis() / 1000;
+        before.setTimeInMillis(temp);
+
+        Calendar today = Calendar.getInstance();
+        //now
+        today.setTimeInMillis(System.currentTimeMillis() / 1000);
+
+        //use DateUtils to display the time in the format "yyyy-MM-dd HH:mm:ss"
+        Log.i(TAG, "data from " + DateUtils.convertString(before) + " to " + DateUtils.convertString(today));
+
+        //all our data is stored in ActivitySQLite as ActivityData objects
+        ArrayList<ActivityData> allActivities = ActivitySQLite.getInstance(ActivitiesChartActivity.this)
+                .getActivitySamples((int) before.getTimeInMillis(), (int) today.getTimeInMillis());
+                
+to get the sleeping data use
+
+        getSleepSamples(int timestamp_from, int timestamp_to)
+        
+and to get the activity data use
+  
+        getActivitySamples(int timestamp_from, int timestamp_to)
+        
+to get ALL the data use
+
+        getAllActivitiesSamples(int timestamp_from, int timestamp_to)
+        
+####Activities example
+
+        Calendar before = Calendar.getInstance();
+        //7 days before
+        before.add(Calendar.DAY_OF_WEEK, -7);
+        long temp = before.getTimeInMillis() / 1000;
+        before.setTimeInMillis(temp);
+
+        Calendar today = Calendar.getInstance();
+        //now
+        today.setTimeInMillis(System.currentTimeMillis() / 1000);
+
+        //use DateUtils to display the time in the format "yyyy-MM-dd HH:mm:ss"
+        Log.i(TAG, "data from " + DateUtils.convertString(before) + " to " + DateUtils.convertString(today));
+
+        //all our data is stored in ActivitySQLite as ActivityData objects
+        ArrayList<ActivityData> allActivities = ActivitySQLite.getInstance(ActivitiesChartActivity.this)
+                .getActivitySamples((int) before.getTimeInMillis(), (int) today.getTimeInMillis());
+                
+        float movement_divisor = 180.0f;
+
+        float value;
+
+        String dateString = "";
+        for (ActivityData ad : allActivities) {
+
+            Calendar date = Calendar.getInstance();
+            date.setTimeInMillis(ad.getTimestamp() * 1000L);
+
+            dateString = DateUtils.convertString(date);
+
+            Log.i(TAG, "date " + dateString);
+            Log.i(TAG, "steps " + ad.getSteps());
+
+            short movement = ad.getIntensity();
+
+            byte steps = ad.getSteps();
+            if (steps != 0) {
+                // I'm not sure using steps for this is actually a good idea
+                movement = steps;
+            }
+            
+            //the value
+            value = ((float) movement) / movement_divisor;
         }
-    
-        @Override
-        protected void onResume() {
-            super.onResume();
-            //we are listening from the mi band service
-            LocalBroadcastManager.getInstance(MainActivity.this).registerReceiver(bluetoothStatusReceiver, new IntentFilter(NotificationConstants.ACTION_MIBAND_SERVICE));
+        
+####Sleeping example
+
+        Calendar before = Calendar.getInstance();
+        //7 days before
+        before.add(Calendar.DAY_OF_WEEK, -7);
+        long temp = before.getTimeInMillis() / 1000;
+        before.setTimeInMillis(temp);
+
+        Calendar today = Calendar.getInstance();
+        //now
+        today.setTimeInMillis(System.currentTimeMillis() / 1000);
+
+        //use DateUtils to display the time in the format "yyyy-MM-dd HH:mm:ss"
+        Log.i(TAG, "data from " + DateUtils.convertString(before) + " to " + DateUtils.convertString(today));
+
+        ArrayList<ActivityData> allActivities = ActivitySQLite.getInstance(SleepChartActivity.this)
+                .getSleepSamples((int) before.getTimeInMillis(), (int) today.getTimeInMillis());
+
+        float movement_divisor = 180.0f;
+
+        float value;
+
+        String dateString = "";
+        for (ActivityData ad : allActivities) {
+
+            Calendar date = Calendar.getInstance();
+            date.setTimeInMillis(ad.getTimestamp() * 1000L);
+
+            dateString = DateUtils.convertString(date);
+
+            Log.i(TAG, "date " + dateString);
+            Log.i(TAG, "steps " + ad.getSteps());
+
+            value = ((float) ad.getIntensity()) / movement_divisor;
+
+            switch (ad.getType()) {
+                case ActivityData.TYPE_DEEP_SLEEP:
+                    //DEEP SLEEP TYPE. Only here we need to adjust the value
+                    value += ActivityData.Y_VALUE_DEEP_SLEEP;
+                    doSomethingWithDeepSleep(value);
+                    break;
+                case ActivityData.TYPE_LIGHT_SLEEP:
+                    //LIGHT SLEEP TYPE
+                    doSomethingWithLightSleep(value);
+                    break;
+                default:
+                    //UNKNOWN TYPE
+                    doSomethingWithUnknownSleep(value);
+                    break;
+            }
+        }
+        
+Also you can track the "Sleep comparison"
+
+        private void refreshSleepAmounts(List<ActivityData> samples) {
+            ActivityAnalysis analysis = new ActivityAnalysis();
+            ActivityAmounts amounts = analysis.calculateActivityAmounts(samples);
+            
+            float hoursOfSleep = amounts.getTotalSeconds() / (float) (60 * 60);
+            
+             Log.i(TAG, "hoursOfSleep " + hoursOfSleep + " h");
+            
+            for (ActivityAmount amount : amounts.getAmounts()) {
+                Log.i(TAG, "name " + amount.getName());
+                Log.i(TAG, "total seconds " + amount.getTotalSeconds());
+                Log.i(TAG, "kind " + amount.getActivityKind());
+            }
         }
 
-3. Then you're ready to connect to Mi Band
+##Acknowledge
+Thanks to
 
-        MiBand.init(MainActivity.this);
+1. [Pangliang](https://github.com/pangliang/miband-sdk-android) with his library I started with mine
+2. [Gadgetbridge](https://github.com/Freeyourgadget/Gadgetbridge) I got all the activities part and some command ideas from them
 
-And to disconnect
-
-        MiBand.disconnect();
-
-As simple as that! 
-
-## Actions
-
-Now the fun part. To send commands you use `MiBand.sendAction(int action, HashMap<String, ? extends Object> params)` or `MiBand.sendAction(int action)` where "action" could be
-
-* MiBandWrapper.ACTION_CONNECT
-2. MiBandWrapper.ACTION_DISCONNECT
-3. MiBandWrapper.ACTION_LIGHTS
-4. MiBandWrapper.ACTION_VIBRATE_WITH_LED
-5. MiBandWrapper.ACTION_VIBRATE_WITHOUT_LED
-6. MiBandWrapper.ACTION_VIBRATE_UNTIL_CALL_STOP
-7. MiBandWrapper.ACTION_BATTERY
-
-for example to make the Mi Band vibrate
-    
-    MiBand.sendAction(MiBandWrapper.ACTION_VIBRATE_WITH_LED);
-
-Also there's a `ColorPickerDialog` class to help choose the int value of a color
-
-    new ColorPickerDialog(MainActivity.this, 255, new ColorPickerDialog.OnColorSelectedListener() {
-                        @Override
-                        public void onColorSelected(int rgb) {
-                            Log.i(TAG, "selected color: " + rgb);
-
-                            //really important!! use "color" key in the params                           
-                            HashMap<String, Integer> params = new HashMap<String, Integer>();
-                            params.put("color", rgb);
-
-                            MiBand.sendAction(MiBandWrapper.ACTION_LIGHTS, params);
-                        }
-                    }).show();
+##Contribute
+Contributions are welcome, be it feedback, bugreports, documentation, translation, research or code. Feel free to work on any of the open [issues](https://github.com/betomaluje/Mi-Band/issues); just leave a comment that you're working on one to avoid duplicated work.
