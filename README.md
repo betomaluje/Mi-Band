@@ -148,15 +148,15 @@ After you are finished syncing with the band, you can access the information usi
                 
 to get the sleeping data use
 
-        getSleepSamples(int timestamp_from, int timestamp_to)
+        ActivitySQLite.getInstance(MySleepActivity.this).getSleepSamples(int timestamp_from, int timestamp_to)
         
 and to get the activity data use
   
-        getActivitySamples(int timestamp_from, int timestamp_to)
+        ActivitySQLite.getInstance(MyActivitiesActivity.this).getActivitySamples(int timestamp_from, int timestamp_to)
         
 to get ALL the data use
 
-        getAllActivitiesSamples(int timestamp_from, int timestamp_to)
+        ActivitySQLite.getInstance(MyAllActivity.this).getAllActivitiesSamples(int timestamp_from, int timestamp_to)
         
 ####Activities example
 
