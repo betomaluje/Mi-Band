@@ -106,7 +106,7 @@ public class ActivitiesChartActivity extends BaseActivity {
 
         int i = 0;
 
-        float movement_divisor = 256.0f;
+        float movement_divisor = 180.0f;
 
         float value;
 
