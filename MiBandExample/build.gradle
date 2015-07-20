@@ -18,6 +18,8 @@ allprojects {
         flatDir {
             dirs 'libs' //this way we can find the .aar file in libs folder
         }
-        maven { url "https://jitpack.io" }
+        maven {
+            url "https://jitpack.io"
+        }
     }
 }

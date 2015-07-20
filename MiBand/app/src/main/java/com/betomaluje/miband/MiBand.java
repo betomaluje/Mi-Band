@@ -132,16 +132,14 @@ public class MiBand {
     /**
      * Checks if the connection is already done with the Mi Band
      *
-     * @return
+     * @return if the Mi Band is connected
      */
     public boolean isConnected() {
         return btConnectionManager.isConnected();
     }
 
     /**
-     * Pairs with Mi Band, for practical purposes unknown, mismatch can also do other operations
-     *
-     * @return data = null
+     * Pairs with Mi Band, for practical purposes unknown, mismatch can also do other operation.
      */
     public void pair() {
         Log.d(TAG, "Pairing...");
@@ -180,7 +178,6 @@ public class MiBand {
      * Signal strength reading and the connected device RSSI value
      *
      * @param callback
-     * @return data : int, rssi值
      */
     public void readRssi(ActionCallback callback) {
         checkConnection();
@@ -189,8 +186,6 @@ public class MiBand {
 
     /**
      * Read band battery information
-     *
-     * @return {@link BatteryInfo}
      */
     public void getBatteryInfo(final ActionCallback callback) {
         checkConnection();
@@ -304,8 +299,7 @@ public class MiBand {
     }
 
     /**
-     * Sets the listener for steps in real time. Use {@link MiBand#enableRealtimeStepsNotify} to start it
-     * and {@link MiBand##disableRealtimeStepsNotify} to stop it
+     * Sets the listener for steps in real time. Use {@link MiBand#enableRealtimeStepsNotify} to start it and {@link MiBand#disableRealtimeStepsNotify} to stop it.
      *
      * @param listener
      */
@@ -507,7 +501,7 @@ public class MiBand {
     }
 
     /**
-     * Notifies the Mi Band with vibration and colour.<br/>
+     * Notifies the Mi Band with vibration and colour.
      * Vibrate and flashes the colour "times" times. Each iteration will start "on_time" milliseconds (up to 500, will be truncated if larger), and then stop it "off_time" milliseconds (no limit here).
      *
      * @param times       : the amount of times to vibrate
@@ -590,10 +584,9 @@ public class MiBand {
     }
 
     /**
-     * Your Mi Band will do crazy things (LED flashing, vibrate)
-     * <p/>
+     * Your Mi Band will do crazy things (LED flashing, vibrate).
      * Note: This will remove bonding information on the Mi Band, which might confused Android.
-     * So before you connect next time remove your Mi Band via Settings > Bluetooth.
+     * So before you connect next time remove your Mi Band via Settings, Bluetooth.
      */
     public void selfTest() {
         checkConnection();

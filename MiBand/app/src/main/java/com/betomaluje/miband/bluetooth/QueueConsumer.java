@@ -42,8 +42,7 @@ public class QueueConsumer implements Runnable {
                 }
             } catch (Exception e) {
                 Log.w(TAG, e.toString());
-            }
-            finally {
+            } finally {
                 if (queue.isEmpty()) {
                     bleCommandManager.setHighLatency();
                 }

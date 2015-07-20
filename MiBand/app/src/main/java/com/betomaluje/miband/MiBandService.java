@@ -13,7 +13,6 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import com.betomaluje.android.miband.R;
 import com.betomaluje.miband.bluetooth.NotificationConstants;
 import com.betomaluje.miband.model.BatteryInfo;
 import com.betomaluje.miband.model.VibrationMode;
@@ -150,7 +149,7 @@ public class MiBandService extends Service {
         //we are listening from activities
         LocalBroadcastManager.getInstance(MiBandService.this).registerReceiver(miBandReceiver, new IntentFilter(NotificationConstants.ACTION_MIBAND));
 
-        LocalBroadcastManager.getInstance(MiBandService.this).registerReceiver(stopServiceReceiver, new IntentFilter("myStoppingFilter"));
+        registerReceiver(stopServiceReceiver, new IntentFilter("myStoppingFilter"));
     }
 
     @Override
@@ -168,6 +167,8 @@ public class MiBandService extends Service {
         //cancel notification
         NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         mNotificationManager.cancel(ONGOING_NOTIFICATION_ID);
+
+        unregisterReceiver(stopServiceReceiver);
     }
 
     @Override
@@ -210,7 +211,6 @@ public class MiBandService extends Service {
 
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(MiBandService.this)
-                        .setSmallIcon(R.mipmap.ic_launcher)
                         .setContentTitle("Mi Band Service")
                         .setOngoing(true)
                         .setContentText("Click to close");

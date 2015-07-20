@@ -78,9 +78,10 @@ public class ActivitySQLite {
     /**
      * Returns all available activity samples from between the two timestamps (inclusive), of the given
      * provided and type(s).
+     *
      * @param timestamp_from : time in millis from date
-     * @param timestamp_to : time in millis to date
-     * @param activityTypes combination of #TYPE_DEEP_SLEEP, #TYPE_LIGHT_SLEEP, #TYPE_ACTIVITY
+     * @param timestamp_to   : time in millis to date
+     * @param activityTypes  combination of #TYPE_DEEP_SLEEP, #TYPE_LIGHT_SLEEP, #TYPE_ACTIVITY
      * @return
      */
     private ArrayList<ActivityData> getActivitiesSample(long timestamp_from, long timestamp_to, int activityTypes) {

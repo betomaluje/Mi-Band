@@ -19,7 +19,7 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme">
 
-        <service android:name="com.betomaluje.miband.MiBandService" />
+        <service android:name="com.betomaluje.miband.MiBandService"/>
 
     </application>
 
