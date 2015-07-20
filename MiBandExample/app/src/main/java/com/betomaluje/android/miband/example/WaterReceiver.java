@@ -10,7 +10,7 @@ import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 
 
-import com.betomaluje.android.miband.example.activities.MainActivity;
+import com.betomaluje.android.miband.example.activities.MainServiceActivity;
 import com.betomaluje.miband.MiBand;
 import com.betomaluje.miband.bluetooth.MiBandWrapper;
 
@@ -46,7 +46,7 @@ public class WaterReceiver extends BroadcastReceiver {
                         .setContentTitle("Water notification")
                         .setContentText(text);
         // Creates an explicit intent for an Activity in your app
-        Intent resultIntent = new Intent(context, MainActivity.class);
+        Intent resultIntent = new Intent(context, MainServiceActivity.class);
 
         // The stack builder object will contain an artificial back stack for the
         // started Activity.
@@ -54,7 +54,7 @@ public class WaterReceiver extends BroadcastReceiver {
         // your application to the Home screen.
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(context);
         // Adds the back stack for the Intent (but not the Intent itself)
-        stackBuilder.addParentStack(MainActivity.class);
+        stackBuilder.addParentStack(MainServiceActivity.class);
         // Adds the Intent that starts the Activity to the top of the stack
         stackBuilder.addNextIntent(resultIntent);
         PendingIntent resultPendingIntent =

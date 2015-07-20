@@ -160,9 +160,8 @@ public class MiBandService extends Service {
 
         LocalBroadcastManager.getInstance(MiBandService.this).unregisterReceiver(miBandReceiver);
 
-        MiBand.dispose();
+        //MiBand.dispose();
         broadcastUpdate(NotificationConstants.MI_BAND_DISCONNECT);
-        broadcastUpdate("CANCEL_WATER");
 
         //cancel notification
         NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);

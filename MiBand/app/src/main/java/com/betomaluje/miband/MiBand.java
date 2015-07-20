@@ -516,8 +516,9 @@ public class MiBand {
 
         byte[] colors = convertRgb(flashColour);
 
+        list.add(new WaitAction(150));
         list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.VIBRATION_WITHOUT_LED));
-        list.add(new WaitAction(250));
+        list.add(new WaitAction(300));
         list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, colors));
 
         /*
