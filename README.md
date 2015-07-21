@@ -23,7 +23,7 @@ Also the pairing process may ocurr several times each time you switch from apps 
 Nevertheless you can still send commands to the Mi Band if you are using both apps. It's not mandatory to uninstall Mi Fit to use this library.
 
 ##Usage
-You can use this library in activities, fragments an even services!
+You can use this library in [activities, fragments](https://github.com/betomaluje/Mi-Band/blob/master/MiBandExample/app/src/main/java/com/betomaluje/android/miband/example/activities/MainNormalActivity.java) an even [services](https://github.com/betomaluje/Mi-Band/blob/master/MiBandExample/app/src/main/java/com/betomaluje/android/miband/example/activities/MainServiceActivity.java)!
 As an alternative you can use the pre defined [MiBandService](https://github.com/betomaluje/Mi-Band/wiki/MiBandService)
 
 1. Define your Mi Band variable (globaly or localy, it doesn't matter because it's a Singleton) and pass it the current Context variable:
