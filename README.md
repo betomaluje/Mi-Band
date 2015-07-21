@@ -8,22 +8,29 @@ Sweet and simple Android implementation to control some aspects of your Xiaomi M
 * Sync with your Mi Band (steps, slept hours, etc)
 * Real time step counter
 
-##Known issues
-###First time connection
-The first time you connect with your Mi Band please be patient. It takes around 45 seconds. After this time, if you can't connect to it, try the following
-
-1. Try disconnecting and again connecting to Bluetooth
-2. Uninstall and install again your app
-
-###Mi Fit app incompatibility
-If you also have the Mi Fit app installed, you may lose some information on the syncing because Mi Fit and your app will be "fighting" to sync the Mi Band data. Once the Mi Band data is synced, it will be "deleted" from the band and lost forever. 
-
-Also the pairing process may ocurr several times each time you switch from apps because you will lose th pairing info from each app.
-
-Nevertheless you can still send commands to the Mi Band if you are using both apps. It's not mandatory to uninstall Mi Fit to use this library.
-
 ##Usage
-You can use this library in [activities, fragments](https://github.com/betomaluje/Mi-Band/blob/master/MiBandExample/app/src/main/java/com/betomaluje/android/miband/example/activities/MainNormalActivity.java) an even [services](https://github.com/betomaluje/Mi-Band/blob/master/MiBandExample/app/src/main/java/com/betomaluje/android/miband/example/activities/MainServiceActivity.java)!
+Mi-Band is ultra simple to use! just follow this 1 step:
+
+0. In your app's dependencies add the library:
+
+        dependencies {
+            compile 'com.betomaluje.miband:app:1.0.1'
+        }
+
+that's it! You're ready!
+
+Note: this is thanks to the new Android Studio that uses jCenter instead of MavenCentral. To see this, you can open your main `build.gradle` file, and under the repositories you should see `jcenter()`. If not, add this as a repository
+
+       allprojects {
+           repositories {
+                mavenCentral()
+                maven {
+                    url 'https://dl.bintray.com/betomaluje/maven/'
+                }
+            }
+        }
+
+Now, to start testing you can use this library in [activities, fragments](https://github.com/betomaluje/Mi-Band/blob/master/MiBandExample/app/src/main/java/com/betomaluje/android/miband/example/activities/MainNormalActivity.java) an even [services](https://github.com/betomaluje/Mi-Band/blob/master/MiBandExample/app/src/main/java/com/betomaluje/android/miband/example/activities/MainServiceActivity.java)!
 As an alternative you can use the pre defined [MiBandService](https://github.com/betomaluje/Mi-Band/wiki/MiBandService)
 
 1. Define your Mi Band variable (globaly or localy, it doesn't matter because it's a Singleton) and pass it the current Context variable:
@@ -272,6 +279,20 @@ Also you can track the "Sleep comparison"
                 Log.i(TAG, "kind " + amount.getActivityKind());
             }
         }
+
+##Known issues
+###First time connection
+The first time you connect with your Mi Band please be patient. It takes around 45 seconds. After this time, if you can't connect to it, try the following
+
+1. Try disconnecting and again connecting to Bluetooth
+2. Uninstall and install again your app
+
+###Mi Fit app incompatibility
+If you also have the Mi Fit app installed, you may lose some information on the syncing because Mi Fit and your app will be "fighting" to sync the Mi Band data. Once the Mi Band data is synced, it will be "deleted" from the band and lost forever. 
+
+Also the pairing process may ocurr several times each time you switch from apps because you will lose th pairing info from each app.
+
+Nevertheless you can still send commands to the Mi Band if you are using both apps. It's not mandatory to uninstall Mi Fit to use this library.
 
 ##Acknowledge
 Thanks to
