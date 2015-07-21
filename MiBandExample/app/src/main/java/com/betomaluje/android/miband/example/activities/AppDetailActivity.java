@@ -20,6 +20,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.betomaluje.android.miband.example.MiBandApplication;
 import com.betomaluje.android.miband.example.R;
 import com.betomaluje.android.miband.example.models.App;
 import com.betomaluje.android.miband.example.sqlite.AppsSQLite;
@@ -387,23 +388,41 @@ public class AppDetailActivity extends BaseActivity implements TimePickerDialog.
                     break;
                 case R.id.button_tryNotification:
 
-                    if (MiBand.getInstance(AppDetailActivity.this).isConnected()) {
+                    if (MiBandApplication.getFrom().equals(MiBandApplication.from.SERVICE)) {
+                        if (MiBand.getInstance(AppDetailActivity.this).isConnected()) {
 
-                        int times = Integer.parseInt(editText_notificationTimes.getText().toString());
-                        int pause = Integer.parseInt(editText_notificationPauseDuration.getText().toString());
-                        int on = Integer.parseInt(editText_notificationOnDuration.getText().toString());
-                        int color = selectedApp.getColor();
+                            int times = Integer.parseInt(editText_notificationTimes.getText().toString());
+                            int pause = Integer.parseInt(editText_notificationPauseDuration.getText().toString());
+                            int on = Integer.parseInt(editText_notificationOnDuration.getText().toString());
+                            int color = selectedApp.getColor();
 
-                        HashMap<String, Integer> params = new HashMap<String, Integer>();
+                            HashMap<String, Integer> params = new HashMap<String, Integer>();
 
-                        params.put(NotificationConstants.KEY_COLOR, color);
-                        params.put(NotificationConstants.KEY_PAUSE_TIME, pause);
-                        params.put(NotificationConstants.KEY_ON_TIME, on);
-                        params.put(NotificationConstants.KEY_TIMES, times);
+                            params.put(NotificationConstants.KEY_COLOR, color);
+                            params.put(NotificationConstants.KEY_PAUSE_TIME, pause);
+                            params.put(NotificationConstants.KEY_ON_TIME, on);
+                            params.put(NotificationConstants.KEY_TIMES, times);
 
-                        MiBand.sendAction(MiBandWrapper.ACTION_NOTIFY, params);
+                            MiBand.sendAction(MiBandWrapper.ACTION_NOTIFY, params);
+                        } else {
+                            Snackbar.make(findViewById(R.id.coordinator), "Please connect the Mi Band first", Snackbar.LENGTH_SHORT).show();
+                        }
                     } else {
-                        Snackbar.make(findViewById(R.id.coordinator), "Please connect the Mi Band first", Snackbar.LENGTH_SHORT).show();
+
+                        MiBand miBand = MiBand.getInstance(AppDetailActivity.this);
+
+                        if (miBand.isConnected()) {
+
+                            //int times = Integer.parseInt(editText_notificationTimes.getText().toString());
+                            //int pause = Integer.parseInt(editText_notificationPauseDuration.getText().toString());
+                            //int on = Integer.parseInt(editText_notificationOnDuration.getText().toString());
+                            int color = selectedApp.getColor();
+
+                            //miBand.notifyBand(times, on, pause, color);
+                            miBand.notifyBand(color);
+                        } else {
+                            Snackbar.make(findViewById(R.id.coordinator), "Please connect the Mi Band first", Snackbar.LENGTH_SHORT).show();
+                        }
                     }
                     break;
             }

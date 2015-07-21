@@ -12,6 +12,20 @@ public class MiBandApplication extends Application {
 
     private static MiBandApplication context;
 
+    private static from which;
+
+    public static enum from {
+        SERVICE, ACTIVITY
+    }
+
+    public static from getFrom() {
+        return which;
+    }
+
+    public static void setFrom(from which) {
+        MiBandApplication.which = which;
+    }
+
     public MiBandApplication() {
         context = this;
     }

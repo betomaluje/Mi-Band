@@ -1,1 +1,1 @@
-include ':app', ':mi-band'
+include ':app'

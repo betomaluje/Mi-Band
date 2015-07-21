@@ -74,7 +74,7 @@ public class NotificationListener extends NotificationListenerService {
             miBand.connect(new ActionCallback() {
                 @Override
                 public void onSuccess(Object data) {
-                    checkService();
+                    //checkService();
 
                     handleNotification(sbn);
                 }
@@ -85,7 +85,7 @@ public class NotificationListener extends NotificationListenerService {
                 }
             });
         } else {
-            checkService();
+            //checkService();
 
             handleNotification(sbn);
         }
