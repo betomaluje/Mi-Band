@@ -9,6 +9,7 @@ import android.support.v7.app.AlertDialog;
 import android.view.View;
 import android.widget.Button;
 
+import com.betomaluje.android.miband.example.MiBandApplication;
 import com.betomaluje.android.miband.example.R;
 import com.betomaluje.android.miband.example.wizard.UserWizardActivity;
 
@@ -76,9 +77,11 @@ public class MainActivity extends BaseActivity {
                 public void onClick(View v) {
                     switch (v.getId()) {
                         case R.id.btn_normal:
+                            MiBandApplication.setFrom(MiBandApplication.from.ACTIVITY);
                             startActivity(new Intent(MainActivity.this, MainNormalActivity.class));
                             break;
                         case R.id.btn_service:
+                            MiBandApplication.setFrom(MiBandApplication.from.SERVICE);
                             startActivity(new Intent(MainActivity.this, MainServiceActivity.class));
                             break;
                     }
