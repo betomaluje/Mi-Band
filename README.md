@@ -14,7 +14,7 @@ Mi-Band is ultra simple to use! just follow this 1 step:
 0. In your app's dependencies add the library:
 
         dependencies {
-            compile 'com.betomaluje.miband:app:1.0.1'
+            compile 'com.betomaluje.miband:app:1.0.2'
         }
 
 that's it! You're ready!
