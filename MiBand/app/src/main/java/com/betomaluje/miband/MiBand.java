@@ -460,8 +460,6 @@ public class MiBand {
             }
         }));
 
-        list.add(new WaitAction(150));
-
         queue(list);
     }
 
