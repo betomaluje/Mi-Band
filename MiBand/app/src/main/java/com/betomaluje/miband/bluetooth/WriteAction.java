@@ -38,7 +38,12 @@ public class WriteAction implements BLEAction {
     }
 
     @Override
-    public void run() {
-        //Do nothing.
+    public boolean expectsResult() {
+        return true;
+    }
+
+    @Override
+    public boolean run(BTCommandManager btCommandManager) {
+        return btCommandManager.writeCharacteristicWithResponse(getCharacteristic(), getPayload(), getCallback());
     }
 }

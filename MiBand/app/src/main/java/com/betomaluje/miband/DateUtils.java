@@ -9,11 +9,16 @@ import java.util.Locale;
  */
 public class DateUtils {
 
-    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
 
     public static String convertString(Calendar cal) {
         return sdf.format(cal.getTime());
+    }
 
+    public static String convertString(long timeInMillis) {
+        Calendar date = Calendar.getInstance();
+        date.setTimeInMillis(timeInMillis);
+        return convertString(date);
     }
 
 }

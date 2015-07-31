@@ -3,6 +3,7 @@ package com.betomaluje.miband.models;
 import java.util.Arrays;
 
 public class ActivityKind {
+    public static final int TYPE_UNKNOWN = 0;
     public static final int TYPE_ACTIVITY = 1;
     public static final int TYPE_LIGHT_SLEEP = 2;
     public static final int TYPE_DEEP_SLEEP = 4;
@@ -13,7 +14,7 @@ public class ActivityKind {
         byte[] result = new byte[3];
         int i = 0;
         if ((types & ActivityKind.TYPE_ACTIVITY) != 0) {
-            result[i++] = ActivityData.TYPE_UNKNOWN;
+            result[i++] = ActivityData.TYPE_ACTIVITY;
         }
         if ((types & ActivityKind.TYPE_DEEP_SLEEP) != 0) {
             result[i++] = ActivityData.TYPE_DEEP_SLEEP;

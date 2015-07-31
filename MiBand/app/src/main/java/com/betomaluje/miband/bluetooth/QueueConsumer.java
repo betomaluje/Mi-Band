@@ -1,20 +1,27 @@
 package com.betomaluje.miband.bluetooth;
 
+import android.bluetooth.BluetoothGattCallback;
+import android.content.Context;
 import android.util.Log;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Created by Lewis on 10/01/15.
  */
-public class QueueConsumer implements Runnable {
+public class QueueConsumer implements Runnable, BTConnectionManager.DataRead {
     private String TAG = this.getClass().getSimpleName();
 
     private BTCommandManager bleCommandManager;
+    private Context context;
     private final LinkedBlockingQueue<BLETask> queue;
 
-    public QueueConsumer(final BTCommandManager bleCommandManager) {
+    private CountDownLatch mWaitForActionResultLatch;
+
+    public QueueConsumer(Context context, final BTCommandManager bleCommandManager) {
+        this.context = context;
         this.bleCommandManager = bleCommandManager;
         this.queue = new LinkedBlockingQueue<>();
     }
@@ -25,28 +32,45 @@ public class QueueConsumer implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
+        while (BTConnectionManager.getInstance(context, null).isConnected()) {
             try {
                 final BLETask task = queue.take();
 
                 final List<BLEAction> actions = task.getActions();
 
                 for (BLEAction action : actions) {
-                    if (action instanceof WaitAction) {
-                        action.run();
-                    } else if (action instanceof WriteAction) {
 
-                        WriteAction writeAction = (WriteAction) action;
-                        bleCommandManager.writeCharacteristic(writeAction.getCharacteristic(), writeAction.getPayload(), writeAction.getCallback());
+                    mWaitForActionResultLatch = new CountDownLatch(1);
+
+                    if(action.run(bleCommandManager)) {
+                        //Log.e(TAG, "success writeCharacteristicWithResponse 2!");
+
+                        boolean waitForResult = action.expectsResult();
+                        if (waitForResult) {
+                            mWaitForActionResultLatch.await();
+                            mWaitForActionResultLatch = null;
+                        }
+
+                    } else {
+                        //Log.e(TAG, "fail writeCharacteristic");
                     }
                 }
             } catch (Exception e) {
                 Log.w(TAG, e.toString());
+
             } finally {
+                mWaitForActionResultLatch = null;
+
                 if (queue.isEmpty()) {
                     bleCommandManager.setHighLatency();
                 }
             }
         }
+    }
+
+    @Override
+    public void OnDataRead() {
+        if(mWaitForActionResultLatch != null)
+            mWaitForActionResultLatch.countDown();
     }
 }

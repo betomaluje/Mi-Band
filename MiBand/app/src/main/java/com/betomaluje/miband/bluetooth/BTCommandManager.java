@@ -1,10 +1,12 @@
 package com.betomaluje.miband.bluetooth;
 
 import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.betomaluje.miband.ActionCallback;
 import com.betomaluje.miband.NotifyListener;
@@ -37,7 +39,7 @@ public class BTCommandManager {
         this.context = context;
         this.gatt = gatt;
 
-        mQueueConsumer = new QueueConsumer(this);
+        mQueueConsumer = new QueueConsumer(context, this);
 
         Thread t = new Thread(mQueueConsumer);
         t.start();
@@ -45,6 +47,10 @@ public class BTCommandManager {
 
     public void queueTask(final BLETask task) {
         mQueueConsumer.add(task);
+    }
+
+    public QueueConsumer getmQueueConsumer() {
+        return mQueueConsumer;
     }
 
     public void writeAndRead(final UUID uuid, byte[] valueToWrite, final ActionCallback callback) {
@@ -82,11 +88,33 @@ public class BTCommandManager {
             if (!this.gatt.writeCharacteristic(chara)) {
                 this.onFail(-1, "gatt.writeCharacteristic() return false");
             } else {
-
+                onSuccess(chara);
             }
         } catch (Throwable tr) {
             Log.e(TAG, "writeCharacteristic", tr);
             this.onFail(-1, tr.getMessage());
+        }
+    }
+
+    public boolean writeCharacteristicWithResponse(UUID uuid, byte[] value, ActionCallback callback) {
+        try {
+            this.currentCallback = callback;
+            BluetoothGattCharacteristic chara = gatt.getService(Profile.UUID_SERVICE_MILI).getCharacteristic(uuid);
+            if (null == chara) {
+                //this.onFail(-1, "BluetoothGattCharacteristic " + uuid + " doesn't exist");
+                return false;
+            }
+            chara.setValue(value);
+            if (!this.gatt.writeCharacteristic(chara)) {
+                //this.onFail(-1, "gatt.writeCharacteristic() return false");
+                return false;
+            } else {
+                //onSuccess(chara);
+                return true;
+            }
+        } catch (Throwable tr) {
+            //this.onFail(-1, tr.getMessage());
+            return false;
         }
     }
 
@@ -175,30 +203,35 @@ public class BTCommandManager {
 
     //ACTIVITY DATA
     //temporary buffer, size is a multiple of 60 because we want to store complete minutes (1 minute = 3 bytes)
-    private static final int activityDataHolderSize = 60 * 24; // 8h
-    private byte[] activityDataHolder = new byte[activityDataHolderSize];
-    //index of the buffer above
-    private int activityDataHolderProgress = 0;
-    //number of bytes we will get in a single data transfer, used as counter
-    private int activityDataRemainingBytes = 0;
-    //same as above, but remains untouched for the ack message
-    private int activityDataUntilNextHeader = 0;
-    //timestamp of the single data transfer, incremented to store each minute's data
-    private GregorianCalendar activityDataTimestampProgress = null;
-    //same as above, but remains untouched for the ack message
-    private GregorianCalendar activityDataTimestampToAck = null;
+    private static final int activityDataHolderSize = 3 * 60 * 4; // 8h
+
+    private static class ActivityStruct {
+        public byte[] activityDataHolder = new byte[activityDataHolderSize];
+        //index of the buffer above
+        public int activityDataHolderProgress = 0;
+        //number of bytes we will get in a single data transfer, used as counter
+        public int activityDataRemainingBytes = 0;
+        //same as above, but remains untouched for the ack message
+        public int activityDataUntilNextHeader = 0;
+        //timestamp of the single data transfer, incremented to store each minute's data
+        public GregorianCalendar activityDataTimestampProgress = null;
+        //same as above, but remains untouched for the ack message
+        public GregorianCalendar activityDataTimestampToAck = null;
+    }
+
+    private ActivityStruct activityStruct;
 
     public void handleActivityNotif(byte[] value) {
+        boolean firstChunk = activityStruct == null;
+        if (firstChunk) {
+            activityStruct = new ActivityStruct();
+        }
+
         if (value.length == 11) {
             // byte 0 is the data type: 1 means that each minute is represented by a triplet of bytes
             int dataType = value[0];
             // byte 1 to 6 represent a timestamp
-            GregorianCalendar timestamp = new GregorianCalendar(value[1] + 2000,
-                    value[2],
-                    value[3],
-                    value[4],
-                    value[5],
-                    value[6]);
+            GregorianCalendar timestamp = parseTimestamp(value, 1);
 
             // counter of all data held by the band
             int totalDataToRead = (value[7] & 0xff) | ((value[8] & 0xff) << 8);
@@ -214,66 +247,91 @@ public class BTCommandManager {
             // after dataUntilNextHeader bytes we will get a new packet of 11 bytes that should be parsed
             // as we just did
 
+            if (firstChunk && dataUntilNextHeader != 0) {
+                String message = String.format("About to transfer %1$s of data starting from %2$s",
+                        (totalDataToRead / 3),
+                        DateFormat.getDateTimeInstance().format(timestamp.getTime()));
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+            }
+
             Log.i(TAG, "total data to read: " + totalDataToRead + " len: " + (totalDataToRead / 3) + " minute(s)");
             Log.i(TAG, "data to read until next header: " + dataUntilNextHeader + " len: " + (dataUntilNextHeader / 3) + " minute(s)");
             Log.i(TAG, "TIMESTAMP: " + DateFormat.getDateTimeInstance().format(timestamp.getTime()) + " magic byte: " + dataUntilNextHeader);
 
-            this.activityDataRemainingBytes = this.activityDataUntilNextHeader = dataUntilNextHeader;
-            this.activityDataTimestampProgress = this.activityDataTimestampToAck = timestamp;
+            activityStruct.activityDataRemainingBytes = activityStruct.activityDataUntilNextHeader = dataUntilNextHeader;
+            activityStruct.activityDataTimestampToAck = (GregorianCalendar) timestamp.clone();
+            activityStruct.activityDataTimestampProgress = timestamp;
 
         } else {
             bufferActivityData(value);
         }
-        if (this.activityDataRemainingBytes == 0) {
-            sendAckDataTransfer(this.activityDataTimestampToAck, this.activityDataUntilNextHeader);
-            flushActivityDataHolder();
+
+        Log.e(TAG, "activity data: length: " + value.length + ", remaining bytes: " + activityStruct.activityDataRemainingBytes);
+
+        if (activityStruct.activityDataRemainingBytes == 0) {
+            sendAckDataTransfer(activityStruct.activityDataTimestampToAck, activityStruct.activityDataUntilNextHeader);
         }
     }
 
+    private GregorianCalendar parseTimestamp(byte[] value, int offset) {
+        GregorianCalendar timestamp = new GregorianCalendar(
+                value[offset] + 2000,
+                value[offset + 1],
+                value[offset + 2],
+                value[offset + 3],
+                value[offset + 4],
+                value[offset + 5]);
+        return timestamp;
+    }
+
     private void bufferActivityData(byte[] value) {
-
-        if (this.activityDataRemainingBytes >= value.length) {
+        if (activityStruct.activityDataRemainingBytes >= value.length) {
             //I don't like this clause, but until we figure out why we get different data sometimes this should work
-            if (value.length == 20 || value.length == this.activityDataRemainingBytes) {
-                System.arraycopy(value, 0, this.activityDataHolder, this.activityDataHolderProgress, value.length);
-                this.activityDataHolderProgress += value.length;
-                this.activityDataRemainingBytes -= value.length;
+            if (value.length == 20 || value.length == activityStruct.activityDataRemainingBytes) {
+                System.arraycopy(value, 0, activityStruct.activityDataHolder, activityStruct.activityDataHolderProgress, value.length);
+                activityStruct.activityDataHolderProgress += value.length;
+                activityStruct.activityDataRemainingBytes -= value.length;
 
-                if (this.activityDataHolderSize == this.activityDataHolderProgress) {
+                if (this.activityDataHolderSize == activityStruct.activityDataHolderProgress) {
                     flushActivityDataHolder();
                 }
             } else {
                 // the length of the chunk is not what we expect. We need to make sense of this data
-                Log.e(TAG, "GOT UNEXPECTED ACTIVITY DATA WITH LENGTH: " + value.length + ", EXPECTED LENGTH: " + this.activityDataRemainingBytes);
+                Log.w(TAG, "GOT UNEXPECTED ACTIVITY DATA WITH LENGTH: " + value.length + ", EXPECTED LENGTH: " + activityStruct.activityDataRemainingBytes);
                 for (byte b : value) {
-                    Log.e(TAG, "DATA: " + String.format("0x%8x", b));
+                    Log.w(TAG, "DATA: " + String.format("0x%8x", b));
                 }
             }
+        } else {
+            Log.e(TAG, "error buffering activity data: remaining bytes: " + activityStruct.activityDataRemainingBytes + ", received: " + value.length);
         }
     }
 
     private void flushActivityDataHolder() {
-        GregorianCalendar timestamp = this.activityDataTimestampProgress;
+        if (activityStruct == null) {
+            Log.d(TAG, "nothing to flush, struct is already null");
+            return;
+        }
+
         byte category, intensity, steps;
 
         ActivitySQLite dbHandler = ActivitySQLite.getInstance(context);
 
-        for (int i = 0; i < this.activityDataHolderProgress; i += 3) { //TODO: check if multiple of 3, if not something is wrong
-            category = this.activityDataHolder[i];
-            intensity = this.activityDataHolder[i + 1];
-            steps = this.activityDataHolder[i + 2];
+        for (int i = 0; i < activityStruct.activityDataHolderProgress; i += 3) { //TODO: check if multiple of 3, if not something is wrong
+            category = activityStruct.activityDataHolder[i];
+            intensity = activityStruct.activityDataHolder[i + 1];
+            steps = activityStruct.activityDataHolder[i + 2];
 
-            dbHandler.saveActivity((int) (timestamp.getTimeInMillis() / 1000),
+            dbHandler.saveActivity((int) (activityStruct.activityDataTimestampProgress.getTimeInMillis() / 1000),
                     ActivityData.PROVIDER_MIBAND,
                     intensity,
                     steps,
                     category);
 
-            timestamp.add(Calendar.MINUTE, 1);
+            activityStruct.activityDataTimestampProgress.add(Calendar.MINUTE, 1);
         }
 
-        this.activityDataHolderProgress = 0;
-        this.activityDataTimestampProgress = timestamp;
+        activityStruct.activityDataHolderProgress = 0;
     }
 
     private void sendAckDataTransfer(Calendar time, int bytesTransferred) {
@@ -299,6 +357,16 @@ public class BTCommandManager {
             queueTask(task);
         } catch (NullPointerException e) {
 
+        } finally {
+            // flush to the DB after sending the ACK
+            flushActivityDataHolder();
+
+            //The last data chunk sent by the miband has always length 0.
+            //When we ack this chunk, the transfer is done.
+            if (bytesTransferred == 0) {
+                activityStruct = null;
+                onSuccess("sync complete");
+            }
         }
     }
 }

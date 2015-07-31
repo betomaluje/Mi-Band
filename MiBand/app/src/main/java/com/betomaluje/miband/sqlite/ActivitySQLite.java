@@ -40,7 +40,7 @@ public class ActivitySQLite {
         MasterSQLiteHelper helperDB = new MasterSQLiteHelper(context);
         SQLiteDatabase db = helperDB.getWritableDatabase();
 
-        Log.e(TAG, "saving Activity " + timestamp);
+        //Log.e(TAG, "saving Activity " + timestamp);
 
         ContentValues cv = new ContentValues();
         cv.put("timestamp", timestamp);
@@ -50,10 +50,8 @@ public class ActivitySQLite {
         cv.put("type", type);
 
         if (db.insert(TABLE_NAME, null, cv) != -1) {
-
             Calendar cal = Calendar.getInstance();
             cal.setTimeInMillis(timestamp);
-
             Log.e(TAG, "Activity " + DateUtils.convertString(cal) + " insertada con éxito!");
             db.close();
             return true;
@@ -63,15 +61,15 @@ public class ActivitySQLite {
         }
     }
 
-    public ArrayList<ActivityData> getSleepSamples(int timestamp_from, int timestamp_to) {
+    public ArrayList<ActivityData> getSleepSamples(long timestamp_from, long timestamp_to) {
         return getActivitiesSample(timestamp_from, timestamp_to, ActivityKind.TYPE_SLEEP);
     }
 
-    public ArrayList<ActivityData> getActivitySamples(int timestamp_from, int timestamp_to) {
+    public ArrayList<ActivityData> getActivitySamples(long timestamp_from, long timestamp_to) {
         return getActivitiesSample(timestamp_from, timestamp_to, ActivityKind.TYPE_ACTIVITY);
     }
 
-    public ArrayList<ActivityData> getAllActivitiesSamples(int timestamp_from, int timestamp_to) {
+    public ArrayList<ActivityData> getAllActivitiesSamples(long timestamp_from, long timestamp_to) {
         return getActivitiesSample(timestamp_from, timestamp_to, ActivityKind.TYPE_ALL);
     }
 
@@ -86,13 +84,15 @@ public class ActivitySQLite {
      */
     private ArrayList<ActivityData> getActivitiesSample(long timestamp_from, long timestamp_to, int activityTypes) {
         if (timestamp_to == -1) {
-            timestamp_to = Integer.MAX_VALUE; // dont know what happens when I use more than max of a signed int
+            timestamp_to = Integer.MAX_VALUE;
         }
 
         MasterSQLiteHelper helperDB = new MasterSQLiteHelper(context);
         SQLiteDatabase db = helperDB.getReadableDatabase();
 
         ArrayList<ActivityData> allActivities = new ArrayList<ActivityData>();
+
+        //Log.i(TAG, "data from " + DateUtils.convertString(timestamp_from) + " to " + DateUtils.convertString(timestamp_to));
 
         String query = "SELECT  * FROM " + TABLE_NAME + " WHERE (timestamp>=" + timestamp_from
                 + " AND timestamp<=" + timestamp_to

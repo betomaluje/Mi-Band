@@ -17,8 +17,10 @@ import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 
 /**
  * Created by betomaluje on 7/16/15.
@@ -88,16 +90,14 @@ public class ActivitiesChartActivity extends BaseActivity {
     private void populateChart() {
         Calendar before = Calendar.getInstance();
         before.add(Calendar.DAY_OF_WEEK, -7);
-        long temp = before.getTimeInMillis() / 1000;
-        before.setTimeInMillis(temp);
 
         Calendar today = Calendar.getInstance();
-        today.setTimeInMillis(System.currentTimeMillis() / 1000);
+        today.setTimeInMillis(System.currentTimeMillis());
 
-        Log.i(TAG, "data from " + DateUtils.convertString(before) + " to " + DateUtils.convertString(today));
+        //Log.i(TAG, "data from " + DateUtils.convertString(before) + " to " + DateUtils.convertString(today));
 
         ArrayList<ActivityData> allActivities = ActivitySQLite.getInstance(ActivitiesChartActivity.this)
-                .getActivitySamples((int) before.getTimeInMillis(), (int) today.getTimeInMillis());
+                .getActivitySamples(before.getTimeInMillis(), today.getTimeInMillis());
         //.getAllActivities();
 
         ArrayList<String> xVals = new ArrayList<String>();
@@ -106,33 +106,47 @@ public class ActivitiesChartActivity extends BaseActivity {
 
         int i = 0;
 
-        float movement_divisor = 180.0f;
+        Calendar cal = Calendar.getInstance();
+        cal.clear();
+        Date date;
+        String dateStringFrom = "";
+        String dateStringTo = "";
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+        SimpleDateFormat annotationDateFormat = new SimpleDateFormat("HH:mm");
+
+        float movementDivisor = 180.0f;
 
         float value;
 
-        String dateString = "";
         for (ActivityData ad : allActivities) {
 
-            Calendar date = Calendar.getInstance();
-            date.setTimeInMillis(ad.getTimestamp() * 1000L);
+            // determine start and end dates
+            if (i == 0) {
+                cal.setTimeInMillis(ad.getTimestamp() * 1000L); // make sure it's converted to long
+                date = cal.getTime();
+                dateStringFrom = dateFormat.format(date);
+            } else if (i == allActivities.size() - 1) {
+                cal.setTimeInMillis(ad.getTimestamp() * 1000L); // same here
+                date = cal.getTime();
+                dateStringTo = dateFormat.format(date);
+            }
 
-            dateString = DateUtils.convertString(date);
+            String xLabel = "";
+            cal.setTimeInMillis(ad.getTimestamp() * 1000L);
+            date = cal.getTime();
+            String dateString = annotationDateFormat.format(date);
+            xLabel = dateString;
 
-            xVals.add(dateString);
+            xVals.add(xLabel);
 
             Log.i(TAG, "date " + dateString);
             Log.i(TAG, "steps " + ad.getSteps());
 
-            short movement = ad.getIntensity();
-
-            byte steps = ad.getSteps();
-            if (steps != 0) {
-                // I'm not sure using steps for this is actually a good idea
-                movement = steps;
-            }
-            value = ((float) movement) / movement_divisor;
+            value = ((float) ad.getIntensity() / movementDivisor);
 
             unknown.add(new BarEntry(value, i));
+
             i++;
         }
 
@@ -154,6 +168,8 @@ public class ActivitiesChartActivity extends BaseActivity {
         // add space between the dataset groups in percent of bar-width
         data.setGroupSpace(0);
 
+        mChart.setDescription(String.format("From %1$s to %2$s",
+                dateStringFrom, dateStringTo));
         mChart.setData(data);
         mChart.invalidate();
 

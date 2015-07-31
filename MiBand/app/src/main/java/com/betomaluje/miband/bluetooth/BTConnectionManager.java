@@ -29,6 +29,10 @@ import java.util.UUID;
  */
 public class BTConnectionManager {
 
+    public interface DataRead {
+        public void OnDataRead();
+    }
+
     //the scanning timeout period
     private static final long SCAN_PERIOD = 45000;
     private static BTConnectionManager instance;
@@ -38,6 +42,7 @@ public class BTConnectionManager {
     private boolean mFound = false;
     private boolean mAlreadyPaired = false;
     private boolean isConnected = false;
+    private boolean isConnecting = false;
     private boolean isSyncNotification = false;
 
     private Handler mHandler = new Handler(Looper.getMainLooper());
@@ -46,6 +51,8 @@ public class BTConnectionManager {
 
     private BTCommandManager io;
     private BluetoothGatt gatt;
+
+    private DataRead onDataRead;
 
     private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
         @Override
@@ -86,7 +93,7 @@ public class BTConnectionManager {
     public BTConnectionManager(Context context, ActionCallback connectionCallback) {
         this.context = context;
 
-        Log.i(TAG, "new BTConnectionManager");
+        //Log.i(TAG, "new BTConnectionManager");
 
         this.connectionCallback = connectionCallback;
     }
@@ -107,10 +114,14 @@ public class BTConnectionManager {
 
         if (adapter == null || !adapter.isEnabled()) {
             connectionCallback.onFail(NotificationConstants.BLUETOOTH_OFF, "Bluetooth disabled or not supported");
+            isConnected = false;
+            isConnecting = false;
         } else {
-            if (!adapter.isDiscovering()) {
+            if (!isConnecting && !adapter.isDiscovering()) {
 
                 Log.i(TAG, "connecting...");
+
+                isConnecting = true;
 
                 if (!tryPairedDevices()) {
 
@@ -172,6 +183,7 @@ public class BTConnectionManager {
         }
 
         isConnected = false;
+        isConnecting = false;
 
         connectionCallback.onFail(-1, "disconnected");
     }
@@ -183,6 +195,7 @@ public class BTConnectionManager {
         }
 
         isConnected = false;
+        isConnecting = false;
 
         connectionCallback.onFail(-1, "disconnected");
     }
@@ -237,7 +250,7 @@ public class BTConnectionManager {
             mAlreadyPaired = false;
 
         if (mAlreadyPaired) {
-            Log.i(TAG, "already paired!");
+            //Log.i(TAG, "already paired!");
             BluetoothDevice mBluetoothMi = adapter.getRemoteDevice(mDeviceAddress);
             mBluetoothMi.connectGatt(context, true, btleGattCallback);
             //mGatt.connect();
@@ -268,6 +281,7 @@ public class BTConnectionManager {
 
     public void setIo(BTCommandManager io) {
         this.io = io;
+        onDataRead = io.getmQueueConsumer();
     }
 
     private final BluetoothGattCallback btleGattCallback = new BluetoothGattCallback() {
@@ -283,7 +297,7 @@ public class BTConnectionManager {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 gatt.discoverServices();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTING || newState == BluetoothProfile.STATE_DISCONNECTED) {
-                Log.e(TAG, "onConnectionStateChange disconnect: " + newState);
+                //Log.e(TAG, "onConnectionStateChange disconnect: " + newState);
                 //toggleNotifications(false);
                 //disconnect();
             }
@@ -293,7 +307,7 @@ public class BTConnectionManager {
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             super.onServicesDiscovered(gatt, status);
 
-            Log.e(TAG, "onServicesDiscovered (0): " + status + " paired: " + isAlreadyPaired());
+            //Log.e(TAG, "onServicesDiscovered (0): " + status + " paired: " + isAlreadyPaired());
 
             if (status == BluetoothGatt.GATT_SUCCESS) {
 
@@ -323,6 +337,7 @@ public class BTConnectionManager {
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
 
+            //if status is 0, success on sending and received
             Log.i(TAG, "handleControlPoint got status:" + status);
 
             if (BluetoothGatt.GATT_SUCCESS == status) {
@@ -332,10 +347,12 @@ public class BTConnectionManager {
                     io.handleControlPointResult(characteristic.getValue());
                 }
 
-
             } else {
                 io.onFail(status, "onCharacteristicWrite fail");
             }
+
+            if(onDataRead != null)
+                onDataRead.OnDataRead();
         }
 
         @Override
@@ -374,6 +391,8 @@ public class BTConnectionManager {
 
     private void stopDiscovery() {
         Log.i(TAG, "Stopping discovery");
+        isConnecting = false;
+
         if (mScanning) {
             if (AppUtils.supportsBluetoothLE(context)) {
                 stopBTLEDiscovery();

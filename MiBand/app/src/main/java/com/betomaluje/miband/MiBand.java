@@ -29,8 +29,6 @@ import java.util.List;
 
 public class MiBand {
 
-    private ActionCallback connectionCallback;
-
     private static final String TAG = "miband-android";
     private static Context context;
     private static BTCommandManager io;
@@ -38,17 +36,7 @@ public class MiBand {
     private static MiBandWrapper miBandWrapper;
     private static Intent miBandService;
     private static BTConnectionManager btConnectionManager;
-
-
-    public synchronized static MiBand getInstance(Context context) {
-        if (instance == null) {
-            instance = new MiBand(context);
-        } else {
-            MiBand.context = context;
-        }
-
-        return instance;
-    }
+    private ActionCallback connectionCallback;
 
     public MiBand(final Context context) {
         MiBand.context = context;
@@ -79,6 +67,16 @@ public class MiBand {
         MiBand.btConnectionManager = BTConnectionManager.getInstance(context, myConnectionCallback);
     }
 
+    public synchronized static MiBand getInstance(Context context) {
+        if (instance == null) {
+            instance = new MiBand(context);
+        } else {
+            MiBand.context = context;
+        }
+
+        return instance;
+    }
+
     public static void initService(Context context) {
         miBandService = new Intent(context, MiBandService.class);
         miBandService.setAction(NotificationConstants.MI_BAND_CONNECT);
@@ -95,6 +93,19 @@ public class MiBand {
         miBandWrapper.sendAction(action, params);
     }
 
+    public static void disconnect() {
+        Log.e(TAG, "Disconnecting Mi Band...");
+        if (miBandService != null)
+            MiBand.context.stopService(miBandService);
+        btConnectionManager.disconnect();
+    }
+
+    public static void dispose() {
+        Log.e(TAG, "Disposing Mi Band...");
+        MiBand.context.stopService(miBandService);
+        btConnectionManager.dispose();
+    }
+
     /**
      * Android device will automatically search for nearby Mi Band, automatic connection, because the hand will have only one Mi Band,
      * currently only supports the search to case a bracelet
@@ -108,18 +119,6 @@ public class MiBand {
         } else {
             Log.e(TAG, "Already connected...");
         }
-    }
-
-    public static void disconnect() {
-        Log.e(TAG, "Disconnecting Mi Band...");
-        MiBand.context.stopService(miBandService);
-        btConnectionManager.disconnect();
-    }
-
-    public static void dispose() {
-        Log.e(TAG, "Disposing Mi Band...");
-        MiBand.context.stopService(miBandService);
-        btConnectionManager.dispose();
     }
 
     private void checkConnection() {
@@ -236,13 +235,7 @@ public class MiBand {
         final List<BLEAction> list = new ArrayList<>();
         list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, protocal));
 
-        final BLETask task = new BLETask(list);
-
-        try {
-            io.queueTask(task);
-        } catch (NullPointerException ignored) {
-
-        }
+        queue(list);
 
     }
 
@@ -265,13 +258,7 @@ public class MiBand {
             list.add(new WaitAction(offTime));
         }
 
-        final BLETask task = new BLETask(list);
-
-        try {
-            io.queueTask(task);
-        } catch (NullPointerException ignored) {
-
-        }
+        queue(list);
     }
 
     /**
@@ -285,13 +272,7 @@ public class MiBand {
         final List<BLEAction> list = new ArrayList<>();
         list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.STOP_VIBRATION));
 
-        final BLETask task = new BLETask(list);
-
-        try {
-            io.queueTask(task);
-        } catch (NullPointerException ignored) {
-
-        }
+        queue(list);
     }
 
     public void setNormalNotifyListener(NotifyListener listener) {
@@ -332,11 +313,7 @@ public class MiBand {
 
         final BLETask task = new BLETask(list);
 
-        try {
-            io.queueTask(task);
-        } catch (NullPointerException ignored) {
-
-        }
+        queue(list);
     }
 
     /**
@@ -350,13 +327,7 @@ public class MiBand {
         final List<BLEAction> list = new ArrayList<>();
         list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.DISABLE_REALTIME_STEPS_NOTIFY));
 
-        final BLETask task = new BLETask(list);
-
-        try {
-            io.queueTask(task);
-        } catch (NullPointerException ignored) {
-
-        }
+        queue(list);
     }
 
     /**
@@ -432,13 +403,7 @@ public class MiBand {
         final List<BLEAction> list = new ArrayList<>();
         list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, color));
 
-        final BLETask task = new BLETask(list);
-
-        try {
-            io.queueTask(task);
-        } catch (NullPointerException ignored) {
-
-        }
+        queue(list);
 
         //MiBand.io.writeCharacteristic(Profile.UUID_CHAR_CONTROL_POINT, color, null);
     }
@@ -472,25 +437,35 @@ public class MiBand {
             list.add(new WaitAction(flashDuration));
         }
 
-        BLETask task = new BLETask(list);
-
-        try {
-            io.queueTask(task);
-        } catch (NullPointerException e) {
-
-        }
+        queue(list);
     }
 
     public synchronized void notifyBand(final int flashColour) {
-        final List<BLEAction> list = new ArrayList<>();
+        List<BLEAction> list = new ArrayList<>();
 
-        byte[] colors = convertRgb(flashColour);
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.VIBRATION_WITHOUT_LED, new ActionCallback() {
+            @Override
+            public void onSuccess(Object data) {
+                byte[] colors = convertRgb(flashColour);
+
+                List<BLEAction> list = new ArrayList<>();
+                list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, colors));
+
+                queue(list);
+            }
+
+            @Override
+            public void onFail(int errorCode, String msg) {
+
+            }
+        }));
 
         list.add(new WaitAction(150));
-        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.VIBRATION_WITHOUT_LED));
-        list.add(new WaitAction(300));
-        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, colors));
 
+        queue(list);
+    }
+
+    private void queue(List<BLEAction> list) {
         final BLETask task = new BLETask(list);
 
         try {
@@ -531,13 +506,7 @@ public class MiBand {
         }
         */
 
-        final BLETask task = new BLETask(list);
-
-        try {
-            io.queueTask(task);
-        } catch (NullPointerException ignored) {
-
-        }
+        queue(list);
     }
 
     /**
@@ -557,15 +526,7 @@ public class MiBand {
         final List<BLEAction> list = new ArrayList<>();
         list.add(new WriteAction(Profile.UUID_CHAR_USER_INFO, userInfo.getData()));
 
-        final BLETask task = new BLETask(list);
-
-        try {
-            io.queueTask(task);
-        } catch (NullPointerException ignored) {
-
-        }
-
-        //MiBand.io.writeCharacteristic(Profile.UUID_CHAR_USER_INFO, userInfo.getData(), null);
+        queue(list);
     }
 
     public void setUserInfo(int gender, int age, int height, int weight, String alias) {
@@ -575,13 +536,7 @@ public class MiBand {
         final List<BLEAction> list = new ArrayList<>();
         list.add(new WriteAction(Profile.UUID_CHAR_USER_INFO, user.getData()));
 
-        final BLETask task = new BLETask(list);
-
-        try {
-            io.queueTask(task);
-        } catch (NullPointerException ignored) {
-
-        }
+        queue(list);
     }
 
     /**
@@ -597,27 +552,15 @@ public class MiBand {
         final List<BLEAction> list = new ArrayList<>();
         list.add(new WriteAction(Profile.UUID_CHAR_TEST, Protocol.SELF_TEST));
 
-        final BLETask task = new BLETask(list);
-
-        try {
-            io.queueTask(task);
-        } catch (NullPointerException ignored) {
-
-        }
+        queue(list);
     }
 
-    public void startListeningSync() {
+    public void startListeningSync(ActionCallback actionCallback) {
         btConnectionManager.toggleNotifications(true);
         final List<BLEAction> list = new ArrayList<>();
-        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.FETCH_DATA));
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.FETCH_DATA, actionCallback));
 
-        final BLETask task = new BLETask(list);
-
-        try {
-            io.queueTask(task);
-        } catch (NullPointerException ignored) {
-
-        }
+        queue(list);
     }
 
     public void stopListeningSync() {

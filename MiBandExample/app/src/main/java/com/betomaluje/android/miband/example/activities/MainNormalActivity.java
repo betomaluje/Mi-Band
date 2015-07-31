@@ -9,8 +9,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
@@ -109,7 +107,7 @@ public class MainNormalActivity extends BaseActivity {
                 connectToMiBand();
             }
         } else {
-            connectToMiBand();
+            //connectToMiBand();
         }
     }
 
@@ -175,7 +173,7 @@ public class MainNormalActivity extends BaseActivity {
                 case R.id.btn_vibrate:
                     textView_status.setText("Vibrating");
 
-                    miBand.customVibration(3, 250, 250);
+                    miBand.customVibration(3, 25, 0);
                     break;
                 case R.id.btn_battery:
                     miBand.getBatteryInfo(new ActionCallback() {
@@ -212,7 +210,35 @@ public class MainNormalActivity extends BaseActivity {
                     thumbNailScaleAnimation(v);
                     break;
                 case R.id.btn_sync:
-                    miBand.startListeningSync();
+                    miBand.startListeningSync(new ActionCallback() {
+                        @Override
+                        public void onSuccess(Object data) {
+                            if (data != null && data.equals("sync complete")) {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        textView_status.setText("Sync completed");
+                                    }
+                                });
+
+                                MiBandWrapper.getInstance(MainNormalActivity.this).sendAction(MiBandWrapper.ACTION_STOP_SYNC);
+                            } else {
+                                Log.e(TAG, "Sync fail: data null");
+                            }
+                        }
+
+                        @Override
+                        public void onFail(int errorCode, final String msg) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    textView_status.setText("Sync error: " + msg);
+                                }
+                            });
+
+                            MiBandWrapper.getInstance(MainNormalActivity.this).sendAction(MiBandWrapper.ACTION_STOP_SYNC);
+                        }
+                    });
                     break;
                 case R.id.btn_chart:
                     startActivity(new Intent(MainNormalActivity.this, SleepChartActivity.class));
@@ -275,6 +301,7 @@ public class MainNormalActivity extends BaseActivity {
                 @Override
                 public void run() {
                     startMiBand();
+
                 }
             });
         }
@@ -313,7 +340,7 @@ public class MainNormalActivity extends BaseActivity {
                 .setCancelable(false)
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        MiBand.disconnect();
+                        miBand.disconnect();
                         stopMiBand();
                     }
                 })

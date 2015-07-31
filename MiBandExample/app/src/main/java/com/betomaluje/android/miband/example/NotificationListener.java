@@ -113,6 +113,8 @@ public class NotificationListener extends NotificationListenerService {
         //only if we have a valid notification, we need to post it to Mi Band Service
         App app = AppsSQLite.getInstance(NotificationListener.this).getApp(sbn.getPackageName());
 
+        //Log.i(TAG, "handleNotification: " + app.getName());
+
         miBand.notifyBand(app.getColor());
 
         /*

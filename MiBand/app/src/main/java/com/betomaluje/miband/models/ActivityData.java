@@ -22,6 +22,7 @@ public class ActivityData {
 
     public static final byte TYPE_DEEP_SLEEP = 5;
     public static final byte TYPE_LIGHT_SLEEP = 4;
+    public static final byte TYPE_ACTIVITY = -1;
     public static final byte TYPE_UNKNOWN = -1;
     // add more here
 

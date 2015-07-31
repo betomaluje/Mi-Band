@@ -10,15 +10,22 @@ public class WaitAction implements BLEAction {
         this.duration = duration;
     }
 
-    public void run() {
-        threadWait(duration);
+    @Override
+    public boolean expectsResult() {
+        return false;
     }
 
-    private void threadWait(final long duration) {
+    @Override
+    public boolean run(BTCommandManager btCommandManager) {
+        return threadWait(duration);
+    }
+
+    private boolean threadWait(final long duration) {
         try {
             Thread.sleep(duration);
+            return true;
         } catch (InterruptedException e) {
-            threadWait(duration);
+            return false;
         }
     }
 }

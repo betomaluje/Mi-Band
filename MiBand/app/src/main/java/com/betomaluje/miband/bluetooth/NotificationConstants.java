@@ -21,6 +21,8 @@ public class NotificationConstants {
     public static final String MI_BAND_BATTERY = "com.betomaluje.miband.battery";
     public static final String MI_BAND_START_SYNC = "com.betomaluje.miband.start_sync";
     public static final String MI_BAND_STOP_SYNC = "com.betomaluje.miband.stop_sync";
+    public static final String MI_BAND_SYNC_SUCCESS = "com.betomaluje.miband.sync_success";
+    public static final String MI_BAND_SYNC_FAIL = "com.betomaluje.miband.sync_fail";
 
     public static final String MI_BAND_NEW_NOTIFICATION = "com.betomaluje.miband.new_notification";
 

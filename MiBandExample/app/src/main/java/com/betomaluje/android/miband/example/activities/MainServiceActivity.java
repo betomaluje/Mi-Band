@@ -10,10 +10,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
@@ -30,9 +28,8 @@ import android.widget.Toast;
 import com.betomaluje.android.miband.example.R;
 import com.betomaluje.android.miband.example.WaterReceiver;
 import com.betomaluje.android.miband.example.WaterScheduler;
-import com.betomaluje.android.miband.example.wizard.UserWizardActivity;
+import com.betomaluje.android.miband.example.services.MiBandService;
 import com.betomaluje.miband.MiBand;
-import com.betomaluje.miband.MiBandService;
 import com.betomaluje.miband.bluetooth.MiBandWrapper;
 import com.betomaluje.miband.bluetooth.NotificationConstants;
 import com.betomaluje.miband.colorpicker.ColorPickerDialog;
@@ -97,6 +94,10 @@ public class MainServiceActivity extends BaseActivity {
             } else if (action.equals("CANCEL_WATER")) {
                 if (alarmManager != null)
                     alarmManager.cancel(pendingIntent);
+            } else if (action.equals(NotificationConstants.MI_BAND_SYNC_SUCCESS)) {
+                textView_status.setText("Sync completed");
+            }else if (action.equals(NotificationConstants.MI_BAND_SYNC_FAIL)) {
+                textView_status.setText("Sync error: " + b.getString("errorCode", "default"));
             }
         }
     };
@@ -304,7 +305,10 @@ public class MainServiceActivity extends BaseActivity {
     }
 
     private void connectToMiBand() {
-        MiBand.initService(MainServiceActivity.this);
+        //MiBand.initService(MainServiceActivity.this);
+        Intent miBandService = new Intent(MainServiceActivity.this, MiBandService.class);
+        miBandService.setAction(NotificationConstants.MI_BAND_CONNECT);
+        startService(miBandService);
 
         btn_connect.setEnabled(false);
 

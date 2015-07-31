@@ -57,7 +57,7 @@ public class AppsSQLite {
         MasterSQLiteHelper helperDB = new MasterSQLiteHelper(context);
         SQLiteDatabase db = helperDB.getWritableDatabase();
 
-        Log.e(TAG, "saving App " + source);
+        //Log.e(TAG, "saving App " + source);
 
         ContentValues cv = new ContentValues();
         cv.put("name", name);
@@ -79,7 +79,7 @@ public class AppsSQLite {
     }
 
     public boolean deleteApp(String source) {
-        Log.e(TAG, "deleting app: " + source);
+        //Log.e(TAG, "deleting app: " + source);
         MasterSQLiteHelper helperDB = new MasterSQLiteHelper(context);
         SQLiteDatabase db = helperDB.getReadableDatabase();
         if (db.delete(TABLE_NAME, "source='" + source + "'", null) > 0) {
@@ -122,7 +122,7 @@ public class AppsSQLite {
     }
 
     public App getApp(String source) {
-        Log.i(TAG, "retrieving app: " + source);
+        //Log.i(TAG, "retrieving app: " + source);
 
         MasterSQLiteHelper helperDB = new MasterSQLiteHelper(context);
         SQLiteDatabase db = helperDB.getReadableDatabase();

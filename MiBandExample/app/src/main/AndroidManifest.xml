@@ -79,6 +79,8 @@
                 android:value=".activities.MainActivity" />
         </activity>
 
+        <service android:name=".services.MiBandService" />
+
         <service
             android:name=".NotificationListener"
             android:label="@string/app_name"

@@ -1,4 +1,4 @@
-package com.betomaluje.miband;
+package com.betomaluje.android.miband.example.services;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -13,6 +13,9 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import com.betomaluje.android.miband.example.R;
+import com.betomaluje.miband.ActionCallback;
+import com.betomaluje.miband.MiBand;
 import com.betomaluje.miband.bluetooth.NotificationConstants;
 import com.betomaluje.miband.model.BatteryInfo;
 import com.betomaluje.miband.model.VibrationMode;
@@ -21,7 +24,7 @@ import com.betomaluje.miband.model.VibrationMode;
  * Created by betomaluje on 6/26/15.
  */
 public class MiBandService extends Service {
-    private final String TAG = MiBandService.class.getSimpleName();
+    private final String TAG = com.betomaluje.miband.MiBandService.class.getSimpleName();
     public static final int ONGOING_NOTIFICATION_ID = 2121;
 
     public MiBand miBand;
@@ -126,8 +129,10 @@ public class MiBandService extends Service {
                     miBand.startListeningSync(new ActionCallback() {
                         @Override
                         public void onSuccess(Object data) {
-                            if (data.equals("sync complete")) {
+                            if (data != null && data.equals("sync complete")) {
                                 broadcastUpdate(NotificationConstants.MI_BAND_SYNC_SUCCESS);
+                            } else {
+                                broadcastUpdate(NotificationConstants.MI_BAND_SYNC_FAIL, "null data");
                             }
                         }
 
@@ -209,19 +214,19 @@ public class MiBandService extends Service {
             }
         }
 
-        createOngoingNotification();
-
         connectMiBand();
 
         return START_STICKY;
     }
 
     private void createOngoingNotification() {
+        Log.d(TAG, "Creating ongoing notification");
         PendingIntent contentIntent = PendingIntent.getBroadcast(MiBandService.this, 0, new Intent("myStoppingFilter"),
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(MiBandService.this)
+                        .setSmallIcon(R.mipmap.ic_launcher)
                         .setContentTitle("Mi Band Service")
                         .setOngoing(true)
                         .setContentText("Click to close");
@@ -237,6 +242,7 @@ public class MiBandService extends Service {
             miBand.connect(connectionAction);
         } else {
             Log.d(TAG, "Already connected with Mi Band!");
+            createOngoingNotification();
             broadcastUpdate(NotificationConstants.MI_BAND_CONNECT);
         }
 
@@ -246,6 +252,7 @@ public class MiBandService extends Service {
         @Override
         public void onSuccess(Object data) {
             Log.d(TAG, "Connected with Mi Band!");
+            createOngoingNotification();
             broadcastUpdate(NotificationConstants.MI_BAND_CONNECT);
         }
 

@@ -24,8 +24,10 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -97,17 +99,14 @@ public class SleepChartActivity extends BaseActivity {
     private void populateChart() {
         Calendar before = Calendar.getInstance();
         before.add(Calendar.DAY_OF_WEEK, -7);
-        long temp = before.getTimeInMillis() / 1000;
-        before.setTimeInMillis(temp);
 
         Calendar today = Calendar.getInstance();
-        today.setTimeInMillis(System.currentTimeMillis() / 1000);
+        today.setTimeInMillis(System.currentTimeMillis());
 
         Log.i(TAG, "data from " + DateUtils.convertString(before) + " to " + DateUtils.convertString(today));
 
         ArrayList<ActivityData> allActivities = ActivitySQLite.getInstance(SleepChartActivity.this)
-                .getSleepSamples((int) before.getTimeInMillis(), (int) today.getTimeInMillis());
-        //.getAllActivities();
+                .getSleepSamples(before.getTimeInMillis(), today.getTimeInMillis());
 
         refreshSleepAmounts(allActivities);
 
@@ -119,24 +118,44 @@ public class SleepChartActivity extends BaseActivity {
 
         int i = 0;
 
-        float movement_divisor = 180.0f;
-
         float value;
 
-        String dateString = "";
+        Calendar cal = Calendar.getInstance();
+        cal.clear();
+        Date date;
+        String dateStringFrom = "";
+        String dateStringTo = "";
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+        SimpleDateFormat annotationDateFormat = new SimpleDateFormat("HH:mm");
+
+        float movementDivisor = 180.0f;
+
         for (ActivityData ad : allActivities) {
 
-            Calendar date = Calendar.getInstance();
-            date.setTimeInMillis(ad.getTimestamp() * 1000L);
+            // determine start and end dates
+            if (i == 0) {
+                cal.setTimeInMillis(ad.getTimestamp() * 1000L); // make sure it's converted to long
+                date = cal.getTime();
+                dateStringFrom = dateFormat.format(date);
+            } else if (i == allActivities.size() - 1) {
+                cal.setTimeInMillis(ad.getTimestamp() * 1000L); // same here
+                date = cal.getTime();
+                dateStringTo = dateFormat.format(date);
+            }
 
-            dateString = DateUtils.convertString(date);
+            String xLabel = "";
+            cal.setTimeInMillis(ad.getTimestamp() * 1000L);
+            date = cal.getTime();
+            String dateString = annotationDateFormat.format(date);
+            xLabel = dateString;
 
-            xVals.add(dateString);
+            xVals.add(xLabel);
 
             Log.i(TAG, "date " + dateString);
             Log.i(TAG, "steps " + ad.getSteps());
 
-            value = ((float) ad.getIntensity()) / movement_divisor;
+            value = ((float) ad.getIntensity() / movementDivisor);
 
             switch (ad.getType()) {
                 case ActivityData.TYPE_DEEP_SLEEP:
@@ -169,10 +188,12 @@ public class SleepChartActivity extends BaseActivity {
         BarData data = new BarData(xVals, dataSets);
         data.setGroupSpace(0f);
 
+        mChart.setDescription(String.format("From %1$s to %2$s",
+                dateStringFrom, dateStringTo));
         mChart.setData(data);
         mChart.invalidate();
 
-        mChart.animateY(2000, Easing.EasingOption.EaseInOutQuart);
+        mChart.animateX(500, Easing.EasingOption.EaseInOutQuart);
     }
 
     private void refreshSleepAmounts(List<ActivityData> samples) {
