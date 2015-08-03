@@ -1,6 +1,5 @@
 package com.betomaluje.miband.bluetooth;
 
-import android.bluetooth.BluetoothGattCallback;
 import android.content.Context;
 import android.util.Log;
 
@@ -42,21 +41,19 @@ public class QueueConsumer implements Runnable, BTConnectionManager.DataRead {
 
                     mWaitForActionResultLatch = new CountDownLatch(1);
 
-                    if(action.run(bleCommandManager)) {
-                        //Log.e(TAG, "success writeCharacteristicWithResponse 2!");
-
+                    if (action.run(bleCommandManager)) {
                         boolean waitForResult = action.expectsResult();
                         if (waitForResult) {
                             mWaitForActionResultLatch.await();
                             mWaitForActionResultLatch = null;
                         }
-
                     } else {
-                        //Log.e(TAG, "fail writeCharacteristic");
+                        Log.v(TAG, "action " + action.getClass().getSimpleName() + " returned false");
+                        break;
                     }
                 }
             } catch (Exception e) {
-                Log.w(TAG, e.toString());
+                Log.e(TAG, e.toString());
 
             } finally {
                 mWaitForActionResultLatch = null;
@@ -66,11 +63,18 @@ public class QueueConsumer implements Runnable, BTConnectionManager.DataRead {
                 }
             }
         }
+
+        if (mWaitForActionResultLatch != null)
+            mWaitForActionResultLatch.countDown();
+
+        if (!queue.isEmpty()) {
+            queue.clear();
+        }
     }
 
     @Override
     public void OnDataRead() {
-        if(mWaitForActionResultLatch != null)
+        if (mWaitForActionResultLatch != null)
             mWaitForActionResultLatch.countDown();
     }
 }

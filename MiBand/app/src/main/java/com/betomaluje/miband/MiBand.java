@@ -249,10 +249,11 @@ public class MiBand {
     public synchronized void customVibration(final int times, final int onTime, final int offTime) {
         final int newOnTime = Math.min(onTime, 500);
 
-        final List<BLEAction> list = new ArrayList<>();
+        List<BLEAction> list = new ArrayList<>();
 
         for (int i = 1; i <= times; i++) {
-            list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.VIBRATION_WITHOUT_LED));
+
+            list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.VIBRATION_UNTIL_CALL_STOP));
             list.add(new WaitAction(newOnTime));
             list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.STOP_VIBRATION));
             list.add(new WaitAction(offTime));
@@ -404,8 +405,6 @@ public class MiBand {
         list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, color));
 
         queue(list);
-
-        //MiBand.io.writeCharacteristic(Profile.UUID_CHAR_CONTROL_POINT, color, null);
     }
 
     private byte[] convertRgb(int rgb) {
@@ -443,23 +442,9 @@ public class MiBand {
     public synchronized void notifyBand(final int flashColour) {
         List<BLEAction> list = new ArrayList<>();
 
-        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.VIBRATION_WITHOUT_LED, new ActionCallback() {
-            @Override
-            public void onSuccess(Object data) {
-                byte[] colors = convertRgb(flashColour);
-
-                List<BLEAction> list = new ArrayList<>();
-                list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, colors));
-
-                queue(list);
-            }
-
-            @Override
-            public void onFail(int errorCode, String msg) {
-
-            }
-        }));
-
+        byte[] colors = convertRgb(flashColour);
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, Protocol.VIBRATION_WITHOUT_LED));
+        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, colors));
         queue(list);
     }
 

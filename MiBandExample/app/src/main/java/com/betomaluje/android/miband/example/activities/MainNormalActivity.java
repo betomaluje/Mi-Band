@@ -173,7 +173,7 @@ public class MainNormalActivity extends BaseActivity {
                 case R.id.btn_vibrate:
                     textView_status.setText("Vibrating");
 
-                    miBand.customVibration(3, 25, 0);
+                    miBand.customVibration(4, 50, 250);
                     break;
                 case R.id.btn_battery:
                     miBand.getBatteryInfo(new ActionCallback() {
