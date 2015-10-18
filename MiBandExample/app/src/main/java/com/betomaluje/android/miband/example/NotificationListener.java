@@ -13,12 +13,18 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.betomaluje.android.miband.example.models.App;
+import com.betomaluje.android.miband.example.models.ShouldNotifyApp;
 import com.betomaluje.android.miband.example.sqlite.AppsSQLite;
 import com.betomaluje.miband.ActionCallback;
 import com.betomaluje.miband.MiBand;
 import com.betomaluje.miband.MiBandService;
 import com.betomaluje.miband.bluetooth.MiBandWrapper;
 import com.betomaluje.miband.bluetooth.NotificationConstants;
+
+import org.joda.time.DateTime;
+import org.joda.time.Seconds;
+
+import java.util.ArrayList;
 
 /**
  * Created by betomaluje on 6/30/15.
@@ -27,6 +33,9 @@ public class NotificationListener extends NotificationListenerService {
 
     private final String TAG = getClass().getSimpleName();
     private MiBand miBand;
+    private long lastNotificationMillis = -1;
+
+    private ArrayList<ShouldNotifyApp> queueApps = new ArrayList<>();
 
     private BroadcastReceiver miBandReceiver = new BroadcastReceiver() {
         @Override
@@ -173,7 +182,47 @@ public class NotificationListener extends NotificationListenerService {
 
         App app = AppsSQLite.getInstance(NotificationListener.this).getApp(source);
 
-        return app != null && app.shouldWeNotify();
+        boolean passedTime = isAppInQueue(source);
+
+        if(!passedTime) {
+            if (lastNotificationMillis != -1) {
+                if (Seconds.secondsBetween(new DateTime(lastNotificationMillis), new DateTime(System.currentTimeMillis())).getSeconds() < 5) {
+                    passedTime = false;
+                } else {
+                    lastNotificationMillis = System.currentTimeMillis();
+                }
+            } else {
+                lastNotificationMillis = System.currentTimeMillis();
+            }
+        }
+
+        Log.i(TAG, "passedTime: " + passedTime);
+
+        if (app != null) {
+            Log.i(TAG, "app.shouldWeNotify(): " + app.shouldWeNotify());
+        }
+
+        return !passedTime && app != null && app.shouldWeNotify();
+    }
+
+    private boolean isAppInQueue(String source) {
+        boolean isInQueue = false;
+
+        for (ShouldNotifyApp app : queueApps) {
+            if (app.packageName.equals(source)) {
+                isInQueue = true;
+                break;
+            }
+        }
+
+        if (!isInQueue) {
+            //we put it
+            queueApps.add(new ShouldNotifyApp(source, queueApps));
+        }
+
+        Log.i(TAG, "source: " + source + " isAppInQueue: " + isInQueue);
+
+        return isInQueue;
     }
 
     @Override

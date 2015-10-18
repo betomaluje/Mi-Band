@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
@@ -185,6 +186,18 @@ public class MiBandService extends Service {
         mNotificationManager.cancel(ONGOING_NOTIFICATION_ID);
 
         unregisterReceiver(stopServiceReceiver);
+
+        MiBand.disconnect();
+
+        Handler mHandler = new Handler(getMainLooper());
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                MiBand.dispose();
+            }
+        }, 2500);
+
+        stopForeground(true);
     }
 
     @Override
@@ -232,8 +245,8 @@ public class MiBandService extends Service {
                         .setContentText("Click to close");
 
         mBuilder.setContentIntent(contentIntent);
-        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        mNotificationManager.notify(ONGOING_NOTIFICATION_ID, mBuilder.build());
+        //NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        startForeground(ONGOING_NOTIFICATION_ID, mBuilder.build());
     }
 
     private void connectMiBand() {

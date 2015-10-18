@@ -11,7 +11,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.betomaluje.android.miband.example.R;
-import com.betomaluje.android.miband.example.activities.MainServiceActivity;
+import com.betomaluje.android.miband.example.activities.MainActivity;
 import com.betomaluje.miband.model.UserInfo;
 
 import org.codepond.wizardroid.WizardStep;
@@ -95,7 +95,7 @@ public class TutorialSummary extends WizardStep {
         PreferenceManager.getDefaultSharedPreferences(getActivity()).edit().putBoolean("firstrun", false).commit();
 
         if (editor.commit()) {
-            getActivity().startActivity(new Intent(getActivity(), MainServiceActivity.class));
+            getActivity().startActivity(new Intent(getActivity(), MainActivity.class));
             getActivity().finish();
         }
 

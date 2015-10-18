@@ -102,7 +102,8 @@ public class MiBand {
 
     public static void dispose() {
         Log.e(TAG, "Disposing Mi Band...");
-        MiBand.context.stopService(miBandService);
+        if (miBandService != null)
+            MiBand.context.stopService(miBandService);
         btConnectionManager.dispose();
     }
 
