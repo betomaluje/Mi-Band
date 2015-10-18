@@ -1,7 +1,6 @@
 package com.betomaluje.miband.bluetooth;
 
 import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.content.Context;
@@ -101,19 +100,11 @@ public class BTCommandManager {
             this.currentCallback = callback;
             BluetoothGattCharacteristic chara = gatt.getService(Profile.UUID_SERVICE_MILI).getCharacteristic(uuid);
             if (null == chara) {
-                //this.onFail(-1, "BluetoothGattCharacteristic " + uuid + " doesn't exist");
                 return false;
             }
             chara.setValue(value);
-            if (!this.gatt.writeCharacteristic(chara)) {
-                //this.onFail(-1, "gatt.writeCharacteristic() return false");
-                return false;
-            } else {
-                //onSuccess(chara);
-                return true;
-            }
+            return this.gatt.writeCharacteristic(chara);
         } catch (Throwable tr) {
-            //this.onFail(-1, tr.getMessage());
             return false;
         }
     }
@@ -138,6 +129,20 @@ public class BTCommandManager {
         } catch (Throwable tr) {
             Log.e(TAG, "readCharacteristic", tr);
             this.onFail(-1, tr.getMessage());
+        }
+    }
+
+    public boolean readCharacteristicWithResponse(UUID uuid, ActionCallback callback) {
+        try {
+            this.currentCallback = callback;
+            BluetoothGattCharacteristic chara = gatt.getService(Profile.UUID_SERVICE_MILI).getCharacteristic(uuid);
+            if (null == chara) {
+                return false;
+            }
+            return this.gatt.readCharacteristic(chara);
+        } catch (Throwable tr) {
+            Log.e(TAG, "readCharacteristic", tr);
+            return false;
         }
     }
 

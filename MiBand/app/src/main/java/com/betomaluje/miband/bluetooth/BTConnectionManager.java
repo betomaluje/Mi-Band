@@ -6,9 +6,11 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -70,14 +72,6 @@ public class BTConnectionManager {
 
                 stopDiscovery();
 
-                if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
-                    //we update current band bluetooth MAC address
-                    SharedPreferences sharedPrefs = context.getSharedPreferences(UserInfo.KEY_PREFERENCES, Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPrefs.edit();
-                    editor.putString(UserInfo.KEY_BT_ADDRESS, device.getAddress());
-                    editor.commit();
-                }
-
                 device.connectGatt(context, false, btleGattCallback);
             }
         }
@@ -110,13 +104,22 @@ public class BTConnectionManager {
         Log.i(TAG, "trying to connect");
         mFound = false;
 
-        adapter = BluetoothAdapter.getDefaultAdapter();
+        BluetoothManager manager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+        adapter = manager.getAdapter();
 
         if (adapter == null || !adapter.isEnabled()) {
-            connectionCallback.onFail(NotificationConstants.BLUETOOTH_OFF, "Bluetooth disabled or not supported");
+            connectionCallback.onFail(NotificationConstants.BLUETOOTH_OFF, "Bluetooth disabled");
             isConnected = false;
             isConnecting = false;
         } else {
+
+            if(!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+                connectionCallback.onFail(NotificationConstants.BLUETOOTH_OFF, "Bluetooth LE not supported");
+                isConnected = false;
+                isConnecting = false;
+                return;
+            }
+
             if (!isConnecting && !adapter.isDiscovering()) {
 
                 Log.i(TAG, "connecting...");
@@ -252,7 +255,7 @@ public class BTConnectionManager {
         if (mAlreadyPaired) {
             //Log.i(TAG, "already paired!");
             BluetoothDevice mBluetoothMi = adapter.getRemoteDevice(mDeviceAddress);
-            mBluetoothMi.connectGatt(context, true, btleGattCallback);
+            mBluetoothMi.connectGatt(context, false, btleGattCallback);
             //mGatt.connect();
         }
 
@@ -294,12 +297,14 @@ public class BTConnectionManager {
 
             BTConnectionManager.this.gatt = gatt;
 
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
+            if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
                 gatt.discoverServices();
-            } else if (newState == BluetoothProfile.STATE_DISCONNECTING || newState == BluetoothProfile.STATE_DISCONNECTED) {
+            } else if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_DISCONNECTED) {
                 //Log.e(TAG, "onConnectionStateChange disconnect: " + newState);
                 //toggleNotifications(false);
                 //disconnect();
+            } else if(status != BluetoothGatt.GATT_SUCCESS) {
+                gatt.disconnect();
             }
         }
 
@@ -310,6 +315,12 @@ public class BTConnectionManager {
             //Log.e(TAG, "onServicesDiscovered (0): " + status + " paired: " + isAlreadyPaired());
 
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                //we update current band bluetooth MAC address
+                SharedPreferences sharedPrefs = context.getSharedPreferences(UserInfo.KEY_PREFERENCES, Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPrefs.edit();
+                editor.putString(UserInfo.KEY_BT_ADDRESS, gatt.getDevice().getAddress());
+
+                editor.commit();
 
                 //we set the Gatt instance
                 BTConnectionManager.this.gatt = gatt;
@@ -338,7 +349,7 @@ public class BTConnectionManager {
             super.onCharacteristicWrite(gatt, characteristic, status);
 
             //if status is 0, success on sending and received
-            Log.i(TAG, "handleControlPoint got status:" + status);
+            //Log.i(TAG, "handleControlPoint got status:" + status);
 
             if (BluetoothGatt.GATT_SUCCESS == status) {
                 io.onSuccess(characteristic);
@@ -351,7 +362,7 @@ public class BTConnectionManager {
                 io.onFail(status, "onCharacteristicWrite fail");
             }
 
-            if(onDataRead != null)
+            if (onDataRead != null)
                 onDataRead.OnDataRead();
         }
 

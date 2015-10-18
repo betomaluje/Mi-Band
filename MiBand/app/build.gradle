@@ -3,11 +3,11 @@ apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: "com.jfrog.bintray"
 
 // This is the library version used when deploying the artifact
-version = "1.0.2"
+version = "1.0.3"
 
 android {
     compileSdkVersion 22
-    buildToolsVersion "23.0.0 rc2"
+    buildToolsVersion "23.0.0 rc3"
 
     defaultConfig {
         minSdkVersion 19
@@ -21,16 +21,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
-    libraryVariants.all { variant ->
-        variant.outputs.each { output ->
-            def outputFile = output.outputFile
-            if (outputFile != null) {
-                def fileName = outputFile.name.replace("app", "mi-band")
-                output.outputFile = new File(outputFile.parent, fileName)
-            }
-        }
-    }
 }
 
 dependencies {
@@ -39,84 +29,30 @@ dependencies {
     compile 'com.android.support:support-v4:22.2.0'
 }
 
+ext {
+    bintrayRepo = 'maven'
+    //this is going to be the repo name on Bintray
+    bintrayName = 'Mi-Band'
 
-def siteUrl = 'https://github.com/betomaluje/Mi-Band'      // Homepage URL of the library
-def gitUrl = 'https://github.com/betomaluje/Mi-Band.git'   // Git repository URL
-group = "com.betomaluje.miband"                      // Maven Group ID for the artifact
+    publishedGroupId = 'com.betomaluje.miband'
+    libraryName = 'Mi-Band'
+    artifact = 'app'
 
+    libraryDescription = 'A wrapper for Xiaomi Mi Band interaction for Android'
 
-install {
-    repositories.mavenInstaller {
-        // This generates POM.xml with proper parameters
-        pom {
-            project {
-                packaging 'aar'
+    siteUrl = 'https://github.com/betomaluje/Mi-Band'
+    gitUrl = 'https://github.com/betomaluje/Mi-Band.git'
 
-                // Add your description here
-                name 'Mi-Band'
-                description = 'A wrapper for Xiaomi Mi Band interaction for Android'
-                url siteUrl
+    libraryVersion = version
 
-                // Set your license
-                licenses {
-                    license {
-                        name 'The Apache Software License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-                developers {
-                    developer {
-                        id 'betomaluje'
-                        name 'Alberto Maluje'
-                        email 'alberto.maluje@gmail.com'
-                    }
-                }
-                scm {
-                    connection gitUrl
-                    developerConnection gitUrl
-                    url siteUrl
+    developerId = 'betomaluje'
+    developerName = 'Alberto Maluje'
+    developerEmail = 'alberto.maluje@gmail.com'
 
-                }
-            }
-        }
-    }
+    licenseName = 'The Apache Software License, Version 2.0'
+    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
 }
 
-task sourcesJar(type: Jar) {
-    from android.sourceSets.main.java.srcDirs
-    classifier = 'sources'
-}
-
-task javadoc(type: Javadoc) {
-    source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-}
-artifacts {
-    archives javadocJar
-    archives sourcesJar
-}
-
-Properties properties = new Properties()
-properties.load(project.rootProject.file('local.properties').newDataInputStream())
-
-// https://github.com/bintray/gradle-bintray-plugin
-bintray {
-    user = properties.getProperty("bintray.user")
-    key = properties.getProperty("bintray.apikey")
-
-    configurations = ['archives']
-    pkg {
-        repo = "maven"
-        // it is the name that appears in bintray when logged
-        name = "Mi-Band"
-        websiteUrl = siteUrl
-        vcsUrl = gitUrl
-        licenses = ["Apache-2.0"]
-        publish = true
-    }
-}
+apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/installv1.gradle'
+apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/bintrayv1.gradle'

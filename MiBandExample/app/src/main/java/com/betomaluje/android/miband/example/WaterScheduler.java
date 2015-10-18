@@ -87,6 +87,8 @@ public class WaterScheduler {
     }
 
     public void schedule(final ScheduleCallback scheduleCallback) {
+        alarmManager.cancel(pendingIntent);
+
         if (isAlarmForToday()) {
             //we schedule the alarm for the next X minutes, repeating every X minutes
 
