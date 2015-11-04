@@ -217,6 +217,8 @@ public class MiBand {
     public void startVibration(VibrationMode mode) {
         checkConnection();
 
+        //TODO see if new firmware or not
+
         byte[] protocal;
         switch (mode) {
             case VIBRATION_WITH_LED:
@@ -228,16 +230,17 @@ public class MiBand {
             case VIBRATION_WITHOUT_LED:
                 protocal = Protocol.VIBRATION_WITHOUT_LED;
                 break;
+            case VIBRATION_NEW_FIRMWARE:
+                protocal = Protocol.VIBRATION_NEW_FIRMWARE;
+                break;
             default:
                 return;
         }
-        //MiBand.io.writeCharacteristic(Profile.UUID_CHAR_CONTROL_POINT, protocal, null);
 
         final List<BLEAction> list = new ArrayList<>();
-        list.add(new WriteAction(Profile.UUID_CHAR_CONTROL_POINT, protocal));
+        list.add(new WriteAction(Profile.UUID_SERVICE_VIBRATE, Profile.UUID_CHAR_ALERT_LEVEL, protocal));
 
         queue(list);
-
     }
 
     /**

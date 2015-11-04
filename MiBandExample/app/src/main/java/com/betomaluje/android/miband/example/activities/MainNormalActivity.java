@@ -31,6 +31,7 @@ import com.betomaluje.miband.bluetooth.MiBandWrapper;
 import com.betomaluje.miband.bluetooth.NotificationConstants;
 import com.betomaluje.miband.colorpicker.ColorPickerDialog;
 import com.betomaluje.miband.model.BatteryInfo;
+import com.betomaluje.miband.model.VibrationMode;
 
 /**
  * Created by betomaluje on 7/20/15.
@@ -173,7 +174,8 @@ public class MainNormalActivity extends BaseActivity {
                 case R.id.btn_vibrate:
                     textView_status.setText("Vibrating");
 
-                    miBand.customVibration(4, 50, 250);
+                    //miBand.customVibration(4, 50, 250);
+                    miBand.startVibration(VibrationMode.VIBRATION_NEW_FIRMWARE);
                     break;
                 case R.id.btn_battery:
                     miBand.getBatteryInfo(new ActionCallback() {

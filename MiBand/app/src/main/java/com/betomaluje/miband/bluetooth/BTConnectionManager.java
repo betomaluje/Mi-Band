@@ -113,7 +113,7 @@ public class BTConnectionManager {
             isConnecting = false;
         } else {
 
-            if(!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+            if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
                 connectionCallback.onFail(NotificationConstants.BLUETOOTH_OFF, "Bluetooth LE not supported");
                 isConnected = false;
                 isConnecting = false;
@@ -303,7 +303,7 @@ public class BTConnectionManager {
                 //Log.e(TAG, "onConnectionStateChange disconnect: " + newState);
                 //toggleNotifications(false);
                 //disconnect();
-            } else if(status != BluetoothGatt.GATT_SUCCESS) {
+            } else if (status != BluetoothGatt.GATT_SUCCESS) {
                 gatt.disconnect();
             }
         }
@@ -315,6 +315,8 @@ public class BTConnectionManager {
             //Log.e(TAG, "onServicesDiscovered (0): " + status + " paired: " + isAlreadyPaired());
 
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                stopDiscovery();
+
                 //we update current band bluetooth MAC address
                 SharedPreferences sharedPrefs = context.getSharedPreferences(UserInfo.KEY_PREFERENCES, Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPrefs.edit();
@@ -404,19 +406,19 @@ public class BTConnectionManager {
         Log.i(TAG, "Stopping discovery");
         isConnecting = false;
 
-        if (mScanning) {
-            if (AppUtils.supportsBluetoothLE(context)) {
-                stopBTLEDiscovery();
-            } else {
-                stopBTDiscovery();
-            }
-
-            mHandler.removeMessages(0, stopRunnable);
-            mScanning = false;
-
-            if (!mFound)
-                connectionCallback.onFail(-1, "No bluetooth devices");
+        //if (mScanning) {
+        if (AppUtils.supportsBluetoothLE(context)) {
+            stopBTLEDiscovery();
+        } else {
+            stopBTDiscovery();
         }
+
+        mHandler.removeMessages(0, stopRunnable);
+        mScanning = false;
+
+        if (!mFound)
+            connectionCallback.onFail(-1, "No bluetooth devices");
+        //}
     }
 
     private void startBTDiscovery() {

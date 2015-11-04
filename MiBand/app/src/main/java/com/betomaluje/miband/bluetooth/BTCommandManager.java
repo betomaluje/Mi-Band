@@ -95,6 +95,20 @@ public class BTCommandManager {
         }
     }
 
+    public boolean writeCharacteristicWithResponse(UUID service, UUID uuid, byte[] value, ActionCallback callback) {
+        try {
+            this.currentCallback = callback;
+            BluetoothGattCharacteristic chara = gatt.getService(service).getCharacteristic(uuid);
+            if (null == chara) {
+                return false;
+            }
+            chara.setValue(value);
+            return this.gatt.writeCharacteristic(chara);
+        } catch (Throwable tr) {
+            return false;
+        }
+    }
+
     public boolean writeCharacteristicWithResponse(UUID uuid, byte[] value, ActionCallback callback) {
         try {
             this.currentCallback = callback;

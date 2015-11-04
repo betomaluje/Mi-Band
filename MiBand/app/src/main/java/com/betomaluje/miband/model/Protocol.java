@@ -10,6 +10,8 @@ public class Protocol {
     public static final byte[] VIBRATION_WITH_LED = {0x8, 0};
     public static final byte[] VIBRATION_UNTIL_CALL_STOP = {0x8, 1};
     public static final byte[] VIBRATION_WITHOUT_LED = {0x8, 2};
+    public static final byte[] VIBRATION_NEW_FIRMWARE = {0x4};
+
     public static final byte[] STOP_VIBRATION = {0x13};
     public static final byte[] ENABLE_REALTIME_STEPS_NOTIFY = {3, 1};
     public static final byte[] DISABLE_REALTIME_STEPS_NOTIFY = {3, 0};

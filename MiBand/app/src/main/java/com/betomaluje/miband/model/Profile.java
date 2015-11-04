@@ -55,6 +55,8 @@ public class Profile {
 
     public static final UUID UUID_DESCRIPTOR_UPDATE_NOTIFICATION = UUID.fromString(String.format(BASE_UUID, "2902"));
 
+    public static final UUID UUID_SERVICE_VIBRATE = UUID.fromString(String.format(BASE_UUID, "1802"));
+
     //EXTRAS (FROM : https://github.com/Freeyourgadget/Gadgetbridge/blob/master/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/miband/MiBandService.java)
     public static final UUID UUID_SERVICE_GENERIC_ACCESS = UUID.fromString(String.format(BASE_UUID, "1800"));
     public static final UUID UUID_SERVICE_GENERIC_ATTRIBUTE = UUID.fromString(String.format(BASE_UUID, "1801"));
