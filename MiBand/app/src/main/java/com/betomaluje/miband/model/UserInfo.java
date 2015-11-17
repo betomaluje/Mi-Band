@@ -70,7 +70,7 @@ public class UserInfo {
     }
 
     public static UserInfo create(String address, int gender, int age, int height, int weight, String alias, int type) throws IllegalArgumentException {
-        if (address == null || address.length() == 0 || alias == null || alias.length() == 0 || gender < 0 || age <= 0 || weight <= 0 || type < 0) {
+        if (address == null || address.length() == 0) {
             throw new IllegalArgumentException("Invalid parameters");
         }
         try {
@@ -95,7 +95,7 @@ public class UserInfo {
 
     private String ensureTenCharacters(String alias) {
         char[] result = new char[10];
-        int aliasLen = alias.length();
+        //int aliasLen = alias.length();
         int maxLen = Math.min(10, alias.length());
         int diff = 10 - maxLen;
         for (int i = 0; i < maxLen; i++) {
