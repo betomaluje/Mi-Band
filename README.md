@@ -1,3 +1,8 @@
+#This repository is no longer maintained.
+Due to personal issues, this project is no longer maintained. You can still use it. Also you can see this awesome projects:
+* [Pangliang](https://github.com/pangliang/miband-sdk-android) with his library I started with mine
+* [Gadgetbridge](https://github.com/Freeyourgadget/Gadgetbridge) I got all the activities part and some command ideas from them
+
 #Mi Band
 Sweet and simple Android implementation to control some aspects of your Xiaomi Mi Band.
 
