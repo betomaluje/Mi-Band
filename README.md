@@ -1,9 +1,9 @@
-#This repository is no longer maintained.
+# This repository is no longer maintained.
 Due to personal issues, this project is no longer maintained. You can still use it. Also you can see this awesome projects:
 * [Pangliang](https://github.com/pangliang/miband-sdk-android) with his library I started with mine
 * [Gadgetbridge](https://github.com/Freeyourgadget/Gadgetbridge) I got all the activities part and some command ideas from them
 
-#Mi Band
+# Mi Band
 Sweet and simple Android implementation to control some aspects of your Xiaomi Mi Band.
 
 * Connect and Disconnect
@@ -13,7 +13,7 @@ Sweet and simple Android implementation to control some aspects of your Xiaomi M
 * Sync with your Mi Band (steps, slept hours, etc)
 * Real time step counter
 
-##Usage
+## Usage
 Mi-Band is ultra simple to use! just follow this 1 step:
 
 0. In your app's dependencies add the library:
@@ -61,10 +61,10 @@ As an alternative you can use the pre defined [MiBandService](https://github.com
             miBand.disconnect();
         }
 
-##Actions
+## Actions
 Now the fun part: sending commands to your band.
 
-###Vibration
+### Vibration
 For vibration you can use the following methods:
 
         //to vibrate using the default band color
@@ -87,7 +87,7 @@ where `times` is an int value to determine **how many times** will vibrate(I rec
 and `on_time` is the time in milliseconds that each vibration will be **On** (not more than 500 milliseconds)
 and `off_time` is the **pause** between each consecutive vibration
         
-###LED Color
+### LED Color
 To change the LED color, you can use
 
         miBand.setLedColor(color);
@@ -112,7 +112,7 @@ where `flash_time` is an int value to determine **how many times** will the led 
 and `color` is the int **value of the color**
 and `pause_time` is the **pause** in milliseconds between each flash
 
-###Battery Info
+### Battery Info
 To get the battery information just use
 
         miBand.getBatteryInfo(new ActionCallback() {
@@ -129,7 +129,7 @@ To get the battery information just use
             }
         });
         
-###Syncronization
+### Syncronization
 To sync data with yor Mi Band use
 
         miBand.startListeningSync();
@@ -170,7 +170,7 @@ to get ALL the data use
 
         ActivitySQLite.getInstance(MyAllActivity.this).getAllActivitiesSamples(int timestamp_from, int timestamp_to)
         
-####Activities example
+#### Activities example
 
         Calendar before = Calendar.getInstance();
         //7 days before
@@ -216,7 +216,7 @@ to get ALL the data use
             value = ((float) movement) / movement_divisor;
         }
         
-####Sleeping example
+#### Sleeping example
 
         Calendar before = Calendar.getInstance();
         //7 days before
@@ -285,25 +285,25 @@ Also you can track the "Sleep comparison"
             }
         }
 
-##Known issues
-###First time connection
+## Known issues
+### First time connection
 The first time you connect with your Mi Band please be patient. It takes around 45 seconds. After this time, if you can't connect to it, try the following
 
 1. Try disconnecting and again connecting to Bluetooth
 2. Uninstall and install again your app
 
-###Mi Fit app incompatibility
+### Mi Fit app incompatibility
 If you also have the Mi Fit app installed, you may lose some information on the syncing because Mi Fit and your app will be "fighting" to sync the Mi Band data. Once the Mi Band data is synced, it will be "deleted" from the band and lost forever. 
 
 Also the pairing process may ocurr several times each time you switch from apps because you will lose th pairing info from each app.
 
 Nevertheless you can still send commands to the Mi Band if you are using both apps. It's not mandatory to uninstall Mi Fit to use this library.
 
-##Acknowledge
+## Acknowledge
 Thanks to
 
 1. [Pangliang](https://github.com/pangliang/miband-sdk-android) with his library I started with mine
 2. [Gadgetbridge](https://github.com/Freeyourgadget/Gadgetbridge) I got all the activities part and some command ideas from them
 
-##Contribute
+## Contribute
 Contributions are welcome, be it feedback, bugreports, documentation, translation, research or code. Feel free to work on any of the open [issues](https://github.com/betomaluje/Mi-Band/issues); just leave a comment that you're working on one to avoid duplicated work.
