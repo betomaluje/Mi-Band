@@ -92,7 +92,7 @@ To change the LED color, you can use
 
         miBand.setLedColor(color);
 
-where `color` is an int value representing the color youg want
+where `color` is an int value representing the color you want
 
 For convenience, there's a `ColorPickerDialog` class to help choose the int value of a color
 
